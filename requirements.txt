@@ -1,0 +1,4 @@
+pigpio==1.78
+smbus2==0.4.1
+numpy
+matplotlib
