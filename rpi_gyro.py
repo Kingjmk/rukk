@@ -1,4 +1,3 @@
-import math
 import struct
 import socket
 from utils import mpu6050
@@ -32,9 +31,7 @@ if __name__ == '__main__':
     output = Output()
     print("WAITING FOR CLIENT")
 
-    mpu_address = 0x68  # MPU6050 device address
-
-    client = mpu6050.Mpu6050(mpu_address)
+    client = mpu6050.Mpu6050(0x68)  # MPU6050 device address
 
     try:
         output.accept_conn()
