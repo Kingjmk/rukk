@@ -10,13 +10,9 @@ import motor
 import controller
 from utils import mpu6050, network
 
-try:
-    import pigpio
-except ImportError:
-    os.system("sudo killall pigpiod")
-    os.system("sudo pigpiod")
-    time.sleep(0.5)
-    import pigpio
+os.system("sudo pigpiod")
+time.sleep(3)
+import pigpio
 
 pi = pigpio.pi()
 

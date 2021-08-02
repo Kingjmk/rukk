@@ -112,12 +112,12 @@ class FlightController:
         """
 
         # ROLL
-        self.motor_fl.pwd(self.motor_fl.width + response_r)
-        self.motor_br.pwd(self.motor_br.width - response_r)
+        self.motor_fl.pwm(self.motor_fl.width + response_r)
+        self.motor_br.pwm(self.motor_br.width - response_r)
 
         # PITCH
-        self.motor_fr.pwd(self.motor_fr.width + response_p)
-        self.motor_bl.pwd(self.motor_bl.width - response_p)
+        self.motor_fr.pwm(self.motor_fr.width + response_p)
+        self.motor_bl.pwm(self.motor_bl.width - response_p)
 
     def run(self):
         """

@@ -1,5 +1,4 @@
-import network
-import mpu6050
+from . import network, mpu6050
 
 
 def clamp(v, minn, maxn):
