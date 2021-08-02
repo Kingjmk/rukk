@@ -20,26 +20,32 @@ class FlightController:
         """
         self.sensor = sensor
         self.motors = motors
-        self.fl_motor = motors[0]
-        self.fr_motor = motors[1]
-        self.br_motor = motors[2]
-        self.bl_motor = motors[3]
+        self.motor_fl = motors[0]
+        self.motor_fr = motors[1]
+        self.motor_br = motors[2]
+        self.motor_bl = motors[3]
 
         # [ROLL, PITCH, YAW]
         self.angles = [0, 0, 0]
-
-        self.TARGET_PITCH_ANGLE = 0
-        self.TARGET_ROLL_ANGLE = 0
-
         """
         The quadcopter balancing is done via a PID controller
         The values of the PID, might be different for the ROLL and PITCH angles
         """
-        # ROLL
         self.KR = [0.04, 0, 0]
-        self.pid_r = PID(Kp=self.KR[0], Ki=self.KR[1], Kd=self.KR[2], setpoint=self.TARGET_ROLL_ANGLE)
-        # PITCH
         self.KP = [0.04, 0, 0]
+        self.TARGET_PITCH_ANGLE = 0
+        self.TARGET_ROLL_ANGLE = 0
+        self.pid_p = None
+        self.pid_r = None
+        self.set_target()
+
+    def set_target(self, roll: float = 0, pitch: float = 0):
+        # ROLL
+        self.TARGET_ROLL_ANGLE = roll
+        self.pid_r = PID(Kp=self.KR[0], Ki=self.KR[1], Kd=self.KR[2], setpoint=self.TARGET_ROLL_ANGLE)
+
+        # PITCH
+        self.TARGET_ROLL_ANGLE = pitch
         self.pid_p = PID(Kp=self.KP[0], Ki=self.KP[1], Kd=self.KP[2], setpoint=self.TARGET_PITCH_ANGLE)
 
     def get_roll_yaw_pitch(self):
@@ -87,12 +93,12 @@ class FlightController:
         """
 
         # ROLL
-        self.fl_motor.pwd(self.fl_motor.width + response_r)
-        self.br_motor.pwd(self.br_motor.width - response_r)
+        self.motor_fl.pwd(self.motor_fl.width + response_r)
+        self.motor_br.pwd(self.motor_br.width - response_r)
 
         # PITCH
-        self.fr_motor.pwd(self.fr_motor.width + response_p)
-        self.bl_motor.pwd(self.bl_motor.width - response_p)
+        self.motor_fr.pwd(self.motor_fr.width + response_p)
+        self.motor_bl.pwd(self.motor_bl.width - response_p)
 
     def run(self):
         """
@@ -102,5 +108,6 @@ class FlightController:
         time.sleep(self.cycle_speed)
 
     def stop(self):
+        self.set_target()
         for motor in self.motors:
             motor.halt(snooze=0)
