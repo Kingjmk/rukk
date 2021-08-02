@@ -7,14 +7,14 @@ SHOULD RUN ON PI STARTUP and beep or something
 import os
 import time
 import motor
-import network
-from utils import mpu6050
+from utils import mpu6050, network
 
 try:
     import pigpio
 except ImportError:
+    os.system("sudo killall pigpiod")
     os.system("sudo pigpiod")
-    time.sleep(1)
+    time.sleep(0.5)
     import pigpio
 
 pi = pigpio.pi()
@@ -22,15 +22,6 @@ pi = pigpio.pi()
 # THREAD GLOBAL REFERENCE
 # yes its bad practice, i dont care
 SERVER_THREAD = None
-
-
-def arm_all():
-    print('ARMING MOTORS FL, FR, BR, BL')
-    MOTOR_FL.arm()
-    MOTOR_FR.arm()
-    MOTOR_BL.arm()
-    MOTOR_FR.arm()
-    print('FINISHED ARMING')
 
 
 def listen_server_func(event, data):
@@ -52,7 +43,12 @@ def main():
     print('INITIALIZING DRONE')
 
     # ARM MOTORS
-    arm_all()
+    print('ARMING MOTORS FL, FR, BR, BL')
+    MOTOR_FL.arm()
+    MOTOR_FR.arm()
+    MOTOR_BL.arm()
+    MOTOR_FR.arm()
+    print('FINISHED ARMING')
     start_server()
 
     print('\n...\nREADY TO RUN')

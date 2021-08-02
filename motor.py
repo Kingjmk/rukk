@@ -1,8 +1,19 @@
 import time
 import utils
 
+"""
+MOTOR GPIO MAPPING - CLOCK WISE
 
-# MOTOR GPIO MAPPING - CLOCK WISE
+      4    front    17
+        \         /
+          \  -  /
+  left     |   |    right
+          /  -  \
+        /         \
+      22    back   27
+
+"""
+
 FRONT_LEFT = 4
 FRONT_RIGHT = 17
 BACK_RIGHT = 27
@@ -25,19 +36,23 @@ class Motor:
     def __init__(self, conn, pin):
         self.conn = conn
         self.pin = pin
+        self.width = 0
 
-    def halt(self) -> None:
+    def halt(self, snooze=1) -> None:
         """
         Switch of the GPIO, and un-arm the ESC.
         Ensure this runs, even on unclean shutdown.
         """
-        self.pwm(width=self.MIN_WIDTH, snooze=1)  # This 1 sec seems to *hasten* shutdown.
+        self.pwm(width=self.MIN_WIDTH, snooze=snooze)  # This 1 sec seems to *hasten* shutdown.
         self.pwm(0)
 
-    def pwm(self, width: int, calibrated: bool = True, snooze = 0):
+    def pwm(self, width: int, calibrated: bool = True, snooze=0):
         if calibrated:
             width += CALIBRATION_OFFSET[self.pin]
-        self.conn.set_servo_pulsewidth(self.pin, utils.clamp(width, self.MIN_WIDTH, self.MAX_WIDTH))
+
+        self.width = utils.clamp(width, self.MIN_WIDTH, self.MAX_WIDTH)
+        self.conn.set_servo_pulsewidth(self.pin, self.width)
+
         if snooze:
             time.sleep(snooze)
         return
