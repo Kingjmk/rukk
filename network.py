@@ -1,5 +1,6 @@
 import socket
 import threading
+from events import Event
 
 
 # Allow any (manage os side)
@@ -20,6 +21,13 @@ class BaseThread(threading.Thread):
         self.port = port
         self.host = host
 
+    def handle_message(self, message):
+        """
+        Handle Incoming event and run whatever in response
+        """
+        event, data = message.split(SEP_CHAR)
+        self.target_func(event, data)
+
 
 class Client(BaseThread):
     """
@@ -29,13 +37,6 @@ class Client(BaseThread):
         super().__init__(thread_id, target_func, host)
         self.sock = socket.socket()
         self.sock.connect((host, port))
-
-    def handle_message(self, message):
-        """
-        Handle Incoming event and run whatever in response
-        """
-        event, data = message.split(SEP_CHAR)
-        self.target_func(message, data)
 
     def send(self, event, data=''):
         """
@@ -82,13 +83,6 @@ class Server(BaseThread):
         self.sock.listen(1)
         self._sock = None
 
-    def handle_message(self, message):
-        """
-        Handle Incoming event and run whatever in response
-        """
-        event, data = message.split(SEP_CHAR)
-        self.target_func(message, data)
-
     def send(self, event, data=''):
         """
         Send message to client
@@ -114,6 +108,8 @@ class Server(BaseThread):
         self._sock, client_addr = self.sock.accept()
 
         print(f'CONNECTED TO {client_addr}')
+        # Send finish initializing event to whoever is on the other side
+        self.send(Event.CONNECTED)
         while True:
             resp = self.listen()
             if resp == -1:
@@ -122,6 +118,7 @@ class Server(BaseThread):
         self._sock.close()
         self._sock = None
         # WAIT FOR CONN AGAIN
-        # YES THIS IS RECURSION THAT's THE POINT
-        print('CONNECTION RESET, WAITING FOR CONNECTION')
+        # YES THIS IS RECURSION THAT's THE POINT IT SHOULD RUN UNTIL THE END OF THE UNIVERSE (or battery)
+        print('CONNECTION RESET, WAITING FOR NEW CONNECTION')
+        # TODO: should be idling on new connection NOT first connection
         self.run()
