@@ -1,4 +1,5 @@
 import time
+import datetime
 import math
 from simple_pid import PID
 
@@ -12,6 +13,7 @@ class FlightController:
     Singleton for Flight controller
     """
     cycle_speed = 0.05  # in Seconds
+    update_timestamp = None
 
     def __init__(self, sensor, *motors):
         """
@@ -39,7 +41,16 @@ class FlightController:
         self.pid_r = None
         self.set_target()
 
+    @property
+    def time_before_reset(self):
+        """
+        Time duration before resetting controls to idle
+        """
+        return datetime.timedelta(seconds=2)
+
     def set_target(self, roll: float = 0, pitch: float = 0):
+        self.update_timestamp = datetime.datetime.now()
+
         # ROLL
         self.TARGET_ROLL_ANGLE = roll
         self.pid_r = PID(Kp=self.KR[0], Ki=self.KR[1], Kd=self.KR[2], setpoint=self.TARGET_ROLL_ANGLE)
@@ -47,6 +58,14 @@ class FlightController:
         # PITCH
         self.TARGET_ROLL_ANGLE = pitch
         self.pid_p = PID(Kp=self.KP[0], Ki=self.KP[1], Kd=self.KP[2], setpoint=self.TARGET_PITCH_ANGLE)
+
+    def set_throttle(self, width: int):
+        for motor in self.motors:
+            motor.pwm(width)
+
+    def adjust_throttle(self, amount: int):
+        for motor in self.motors:
+            motor.pwm(motor.width + amount)
 
     def get_roll_yaw_pitch(self):
         coeff = 1 / (30 * pow(10, 3))
@@ -104,6 +123,9 @@ class FlightController:
         """
         Should run inside loop
         """
+        if self.update_timestamp and self.update_timestamp + self.time_before_reset < datetime.datetime.now():
+            self.set_target()
+
         self.balance()
         time.sleep(self.cycle_speed)
 
