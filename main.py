@@ -7,8 +7,9 @@ SHOULD RUN ON PI STARTUP and beep or something
 import os
 import time
 import motor
+import sensor
 import controller
-from utils import mpu6050, network
+from utils import network
 
 os.system("sudo pigpiod")
 time.sleep(3)
@@ -18,8 +19,6 @@ pi = pigpio.pi()
 
 # THREAD GLOBAL REFERENCE
 # yes its bad practice, i dont care
-CONTROLLER = None
-SERVER_THREAD = None
 
 
 def listen_server_func(event, data):
@@ -74,11 +73,11 @@ if __name__ == "__main__":
     MOTOR_BR = motor.Motor(pi, motor.BACK_RIGHT)
     MOTOR_BL = motor.Motor(pi, motor.BACK_LEFT)
 
-    SENSOR = mpu6050.Mpu6050(0x68)
+    SENSOR = sensor.Mpu()
 
     # Function exists as to not pollute the global namespace
     try:
         main()
     except KeyboardInterrupt:
-        CONTROLLER.set_throttle(0)
+        CONTROLLER.halt()
         print('Stopping flight controller')

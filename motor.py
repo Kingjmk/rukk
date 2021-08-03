@@ -56,7 +56,7 @@ class Motor:
             throttle += CALIBRATION_OFFSET[self.pin]
 
         self.throttle = utils.clamp(throttle, self.MIN_THROTTLE, self.MAX_THROTTLE)
-        self.conn.set_servo_pulsethrottle(self.pin, self.throttle)
+        self.conn.set_servo_pulsewidth(self.pin, self.throttle)
 
         if snooze:
             time.sleep(snooze)

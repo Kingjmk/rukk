@@ -1,13 +1,10 @@
 import time
 import datetime
-import math
 from simple_pid import PID
 from events import Event
-from utils import decode_control
+import utils
 
-
-def complementary_filter(angle, acc, gyro, dt, alpha):
-    return (alpha * (angle + gyro * dt) + (1 - alpha) * acc) * (1 / (1 - alpha * dt))
+DEBUG = True
 
 
 def ease_in(value: int, target: int):
@@ -20,7 +17,7 @@ class FlightController:
     Singleton for Flight controller
     """
     cycle_speed = 0.05  # in Seconds
-    initial_speed = 1000
+    initial_throttle = 800
 
     def __init__(self, sensor, *motors):
         """
@@ -35,10 +32,10 @@ class FlightController:
         self.motor_bl = motors[3]
 
         # [ROLL, PITCH, YAW]
-        self.angles = [0, 0, 0]
+        self.angles = [0.0, 0.0, 0.0]
 
         # THROTTLE
-        self.throttle = self.initial_speed
+        self.throttle = self.initial_throttle
 
         """
         The quadcopter balancing is done via a PID controller
@@ -72,26 +69,11 @@ class FlightController:
         self.pid_p = PID(Kp=self.KP[0], Ki=self.KP[1], Kd=self.KP[2], setpoint=self.TARGET_PITCH_ANGLE)
 
     def set_throttle(self, throttle: int):
+        self.update_timestamp = datetime.datetime.now()
         self.throttle = throttle
 
     def get_roll_yaw_pitch(self):
-        coeff = 1 / (30 * pow(10, 3))
-        gd = self.sensor.get_gyro_data()
-        ad = self.sensor.get_accel_data()
-        gx, gy, gz = gd['x'], gd['y'], gd['z']
-        ax, ay, az = ad['x'], ad['y'], ad['z']
-
-        g = math.sqrt(math.pow(ax, 2) + math.pow(ay, 2) + math.pow(az, 2))
-
-        roll = math.acos(ay / g) * 180 / math.pi - 90
-
-        pitch = math.acos(ax / g) * 180 / math.pi - 90
-
-        yaw = -math.acos(az / g) * 180 / math.pi
-
-        # APPLYING FILTERS
-        self.angles[0] = (complementary_filter(self.angles[0], roll, gx, coeff, 0.98))
-        self.angles[1] = (complementary_filter(self.angles[1], pitch, gy, coeff, 0.98))
+        self.angles = self.sensor.gyro()
         return self.angles
 
     def accelerate(self):
@@ -136,6 +118,14 @@ class FlightController:
         self.motor_fr.pwm(self.motor_fr.throttle + response_p)
         self.motor_bl.pwm(self.motor_bl.throttle - response_p)
 
+    def idle(self):
+        self.set_target()
+        self.set_throttle(self.initial_throttle)
+
+    def halt(self):
+        for motor in self.motors:
+            motor.halt()
+
     def run_event(self, event, data):
         if Event.STOP == event:
             self.set_target()
@@ -145,7 +135,7 @@ class FlightController:
                 motor.halt(snooze=0)
 
         if Event.CONTROL == event:
-            throttle, roll, pitch, yaw = decode_control(data)
+            throttle, roll, pitch, yaw = utils.decode_control(data)
             self.set_target(roll, pitch, yaw)
             self.set_throttle(throttle)
 
@@ -154,7 +144,15 @@ class FlightController:
         Should run inside loop
         """
         if self.update_timestamp and self.update_timestamp + self.time_before_reset < datetime.datetime.now():
-            self.set_target()
+            self.idle()
+
         self.accelerate()
         self.balance()
+
+        if DEBUG:
+            m = ''
+            # m += f'FL={round(self.motor_fl.throttle, 2)} FR={round(self.motor_fr.throttle, 2)} BR={round(self.motor_br.throttle, 2)} BR={round(self.motor_bl.throttle, 2)}'
+            m += f' ROLL {self.get_roll_yaw_pitch()[0]}, PITCH {self.get_roll_yaw_pitch()[1]}'
+            print(m)
+
         time.sleep(self.cycle_speed)
