@@ -12,6 +12,11 @@ MOTOR GPIO MAPPING - CLOCK WISE
         /         \
       22    back   27
 
+17-22 is X or ROLL
+4-27 is Y or PITCH
+
+Z is vertical
+
 """
 
 FRONT_LEFT = 4
@@ -29,29 +34,29 @@ CALIBRATION_OFFSET = {
 
 class Motor:
     # MAX ESC SPEED
-    MAX_WIDTH = 2400
+    MAX_THROTTLE = 2400
     # MIN ESC SPEED
-    MIN_WIDTH = 650
+    MIN_THROTTLE = 650
 
     def __init__(self, conn, pin):
         self.conn = conn
         self.pin = pin
-        self.width = 0
+        self.throttle = 0
 
     def halt(self, snooze=1) -> None:
         """
         Switch of the GPIO, and un-arm the ESC.
         Ensure this runs, even on unclean shutdown.
         """
-        self.pwm(width=self.MIN_WIDTH, snooze=snooze)  # This 1 sec seems to *hasten* shutdown.
+        self.pwm(throttle=self.MIN_THROTTLE, snooze=snooze)  # This 1 sec seems to *hasten* shutdown.
         self.pwm(0)
 
-    def pwm(self, width: int, calibrated: bool = True, snooze=0):
+    def pwm(self, throttle: int, calibrated: bool = True, snooze=0):
         if calibrated:
-            width += CALIBRATION_OFFSET[self.pin]
+            throttle += CALIBRATION_OFFSET[self.pin]
 
-        self.width = utils.clamp(width, self.MIN_WIDTH, self.MAX_WIDTH)
-        self.conn.set_servo_pulsewidth(self.pin, self.width)
+        self.throttle = utils.clamp(throttle, self.MIN_THROTTLE, self.MAX_THROTTLE)
+        self.conn.set_servo_pulsethrottle(self.pin, self.throttle)
 
         if snooze:
             time.sleep(snooze)
@@ -63,12 +68,12 @@ class Motor:
         This only needs to be done when changing controllers, transmitters, etc. not upon every power-on.
         NB: if already calibrated, full throttle will be applied (briefly)!  Disconnect propellers, etc.
         """
-        self.pwm(width=self.MAX_WIDTH)
-        self.pwm(width=self.MAX_WIDTH, snooze=2)  # Official docs: "about 2 seconds".
-        self.pwm(width=self.MIN_WIDTH, snooze=4)  # Time enough for the cell count, etc. beeps to play.
+        self.pwm(throttle=self.MAX_THROTTLE)
+        self.pwm(throttle=self.MAX_THROTTLE, snooze=2)  # Official docs: "about 2 seconds".
+        self.pwm(throttle=self.MIN_THROTTLE, snooze=4)  # Time enough for the cell count, etc. beeps to play.
 
     def arm(self) -> None:
         """
         Arms the ESC. Required upon every power cycle.
         """
-        self.pwm(width=self.MIN_WIDTH, snooze=4)  # Time enough for the cell count, etc. beeps to play.
+        self.pwm(throttle=self.MIN_THROTTLE, snooze=4)  # Time enough for the cell count, etc. beeps to play.

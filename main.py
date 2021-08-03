@@ -5,12 +5,10 @@ CODE ON RPI
 SHOULD RUN ON PI STARTUP and beep or something
 """
 import os
-import sys
 import time
 import motor
 import controller
 from utils import mpu6050, network
-import signal
 
 os.system("sudo pigpiod")
 time.sleep(3)
@@ -28,7 +26,7 @@ def listen_server_func(event, data):
     """
     Mapping events to controller actions
     """
-    pass
+    CONTROLLER.run_event(event, data)
 
 
 def start_server():
@@ -79,13 +77,8 @@ if __name__ == "__main__":
     SENSOR = mpu6050.Mpu6050(0x68)
 
     # Function exists as to not pollute the global namespace
-    main()
-
-
-def signal_handler(sig, frame):
-    CONTROLLER.set_throttle(0)
-    sys.exit(0)
-
-
-signal.signal(signal.SIGINT, signal_handler)
-signal.pause()
+    try:
+        main()
+    except KeyboardInterrupt:
+        CONTROLLER.set_throttle(0)
+        print('Stopping flight controller')
