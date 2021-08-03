@@ -31,9 +31,6 @@ class FlightController:
         self.motor_br = motors[2]
         self.motor_bl = motors[3]
 
-        # [ROLL, PITCH, YAW]
-        self.angles = [0.0, 0.0, 0.0]
-
         # THROTTLE
         self.throttle = self.initial_throttle
 
@@ -72,9 +69,9 @@ class FlightController:
         self.update_timestamp = datetime.datetime.now()
         self.throttle = throttle
 
-    def get_roll_yaw_pitch(self):
-        self.angles = self.sensor.gyro()
-        return self.angles
+    @property
+    def angles(self):
+        return self.sensor.angles
 
     def accelerate(self):
         """
@@ -87,7 +84,7 @@ class FlightController:
         """
         Balance towards target angle
         """
-        vector = self.get_roll_yaw_pitch()
+        vector = self.angles
         tmp = [0, 0, 0]
 
         # copy the values to a new vector
@@ -152,7 +149,7 @@ class FlightController:
         if DEBUG:
             m = ''
             # m += f'FL={round(self.motor_fl.throttle, 2)} FR={round(self.motor_fr.throttle, 2)} BR={round(self.motor_br.throttle, 2)} BR={round(self.motor_bl.throttle, 2)}'
-            m += f' ROLL {self.get_roll_yaw_pitch()[0]}, PITCH {self.get_roll_yaw_pitch()[1]}'
+            m += f' ROLL {self.angles[0]}, PITCH {self.angles[1]}'
             print(m)
 
         time.sleep(self.cycle_speed)
