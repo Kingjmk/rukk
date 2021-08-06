@@ -1,3 +1,4 @@
+import math
 import time
 import datetime
 from simple_pid import PID
@@ -38,8 +39,8 @@ class FlightController:
         The quadcopter balancing is done via a PID controller
         The values of the PID, might be different for the ROLL and PITCH angles
         """
-        self.KR = [0.04, 0, 0]
-        self.KP = [0.04, 0, 0]
+        self.KR = [0.2, 0, 0]
+        self.KP = [0.2, 0, 0]
         self.TARGET_PITCH_ANGLE = 0
         self.TARGET_ROLL_ANGLE = 0
         self.pid_p = None
@@ -80,40 +81,53 @@ class FlightController:
         for motor in self.motors:
             motor.pwm(ease_in(motor.throttle, self.throttle))
 
+    @staticmethod
+    def rotate(point, angle):
+        """
+        Rotate a point counterclockwise by a given angle around a given origin.
+
+        The angle should be given in radians.
+        """
+        px, py, oz = point
+
+        qx = math.cos(angle) * px - math.sin(angle) * py
+        qy = math.sin(angle) * px + math.cos(angle) * py
+        return qx, qy
+
     def balance(self):
         """
-        Balance towards target angle
+        Balance towards target rotation
         """
-        vector = self.angles
-        tmp = [0, 0, 0]
 
-        # copy the values to a new vector
-        for i in range(0, len(vector)):
-            tmp[i] = vector[i]
-
-        tmp1 = tmp[0]
-        tmp[0] += tmp[1]
-        tmp[1] -= tmp1
+        """
+        to get target rotation based on actual X shape we need to rotate the angle vector by 45 degrees
+        """
+        rotation_vector = self.rotate(self.angles, 45)
 
         """
         In these two lines the error is calculated by the difference of the 
         actual angle - the desired angle.
         """
-        response_r = (self.pid_r(tmp[0] - self.TARGET_ROLL_ANGLE))
-        response_p = -(self.pid_p(tmp[1] - self.TARGET_PITCH_ANGLE))
+        response_r = self.pid_r(rotation_vector[0] - self.TARGET_ROLL_ANGLE)
+        response_p = -1 * (self.pid_p(rotation_vector[1] - self.TARGET_PITCH_ANGLE))
 
         """
         after the response is calculated we change the speeds of the motors
         according to that response.
         """
+        if DEBUG:
+            print('-----')
+            m = f'{self.motor_fl.throttle - response_p} {self.motor_fr.throttle - response_r}\n'
+            m += f'\n{self.motor_bl.throttle + response_r} {self.motor_br.throttle + response_p}\n'
+            print(m)
 
         # ROLL
-        self.motor_fl.pwm(self.motor_fl.throttle + response_r)
-        self.motor_br.pwm(self.motor_br.throttle - response_r)
+        self.motor_fr.pwm(self.motor_fr.throttle - response_r)
+        self.motor_bl.pwm(self.motor_bl.throttle + response_r)
 
         # PITCH
-        self.motor_fr.pwm(self.motor_fr.throttle + response_p)
-        self.motor_bl.pwm(self.motor_bl.throttle - response_p)
+        self.motor_fl.pwm(self.motor_fl.throttle - response_p)
+        self.motor_br.pwm(self.motor_br.throttle + response_p)
 
     def idle(self):
         self.set_target()
@@ -145,11 +159,5 @@ class FlightController:
 
         self.accelerate()
         self.balance()
-
-        if DEBUG:
-            m = ''
-            # m += f'FL={round(self.motor_fl.throttle, 2)} FR={round(self.motor_fr.throttle, 2)} BR={round(self.motor_br.throttle, 2)} BR={round(self.motor_bl.throttle, 2)}'
-            m += f' ROLL {self.angles[0]}, PITCH {self.angles[1]}'
-            print(m)
 
         time.sleep(self.cycle_speed)

@@ -73,7 +73,7 @@ if __name__ == "__main__":
     MOTOR_BR = motor.Motor(pi, motor.BACK_RIGHT)
     MOTOR_BL = motor.Motor(pi, motor.BACK_LEFT)
 
-    SENSOR = sensor.Mpu()
+    SENSOR = sensor.Mpu(flip=True)
 
     # Function exists as to not pollute the global namespace
     try:
