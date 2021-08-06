@@ -19,6 +19,7 @@ class FlightController:
     """
     cycle_speed = 0.05  # in Seconds
     initial_throttle = 800
+    proportional_gain = 20.0
 
     def __init__(self, sensor, *motors):
         """
@@ -39,8 +40,8 @@ class FlightController:
         The quadcopter balancing is done via a PID controller
         The values of the PID, might be different for the ROLL and PITCH angles
         """
-        self.KR = [0.2, 0, 0]
-        self.KP = [0.2, 0, 0]
+        self.KR = [self.proportional_gain, 0, 0]
+        self.KP = [self.proportional_gain, 0, 0]
         self.TARGET_PITCH_ANGLE = 0
         self.TARGET_ROLL_ANGLE = 0
         self.pid_p = None
@@ -81,19 +82,6 @@ class FlightController:
         for motor in self.motors:
             motor.pwm(ease_in(motor.throttle, self.throttle))
 
-    @staticmethod
-    def rotate(point, angle):
-        """
-        Rotate a point counterclockwise by a given angle around a given origin.
-
-        The angle should be given in radians.
-        """
-        px, py, oz = point
-
-        qx = math.cos(angle) * px - math.sin(angle) * py
-        qy = math.sin(angle) * px + math.cos(angle) * py
-        return qx, qy
-
     def balance(self):
         """
         Balance towards target rotation
@@ -102,7 +90,12 @@ class FlightController:
         """
         to get target rotation based on actual X shape we need to rotate the angle vector by 45 degrees
         """
-        rotation_vector = self.rotate(self.angles, 45)
+        x_angle, y_angle, z_angle = self.angles
+        rotation_angle = math.radians(45)
+        rotation_vector = [
+            math.cos(rotation_angle) * math.radians(x_angle) - math.sin(rotation_angle) * math.radians(y_angle),
+            math.sin(rotation_angle) * math.radians(x_angle) + math.cos(rotation_angle) * math.radians(y_angle),
+        ]
 
         """
         In these two lines the error is calculated by the difference of the 
