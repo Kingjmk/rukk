@@ -18,7 +18,7 @@ class FlightController:
     Singleton for Flight controller
     """
     cycle_speed = 0.05  # in Seconds
-    initial_throttle = 800
+    initial_throttle = 1000
     proportional_gain = 20.0
 
     def __init__(self, sensor, *motors):
@@ -49,12 +49,20 @@ class FlightController:
         self.update_timestamp = None
         self.set_target()
 
+    def arm_motors(self):
+        """
+        Arm all motors at once, this will shorten arming time
+        """
+        for motor in self.motors:
+            motor.arm(0)
+        time.sleep(4)
+
     @property
     def time_before_reset(self):
         """
         Time duration before resetting controls to idle
         """
-        return datetime.timedelta(seconds=2)
+        return datetime.timedelta(milliseconds=500)
 
     def set_target(self, roll: float = 0, pitch: float = 0, yaw: float = 0):
         self.update_timestamp = datetime.datetime.now()
@@ -147,7 +155,7 @@ class FlightController:
         """
         Should run inside loop
         """
-        if self.update_timestamp and self.update_timestamp + self.time_before_reset < datetime.datetime.now():
+        if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
             self.idle()
 
         self.accelerate()

@@ -17,15 +17,46 @@ import pigpio
 
 pi = pigpio.pi()
 
-# THREAD GLOBAL REFERENCE
-# yes its bad practice, i dont care
+"""
+MOTOR GPIO MAPPING - CLOCK WISE
+
+      4    front    17
+        \         /
+          \  -  /
+  left     |   |    right
+          /  -  \
+        /         \
+      22    back   27
+
+17-22 is X or ROLL
+4-27 is Y or PITCH
+
+
+Z is vertical or YAW
+
+"""
+
+MOTOR_FRONT_LEFT = 4
+MOTOR_FRONT_RIGHT = 17
+MOTOR_BACK_RIGHT = 27
+MOTOR_BACK_LEFT = 22
+
+MOTOR_CALIBRATION = {
+    MOTOR_FRONT_LEFT: 0,
+    MOTOR_FRONT_RIGHT: 0,
+    MOTOR_BACK_RIGHT: 0,
+    MOTOR_BACK_LEFT: 0,
+}
 
 
 def listen_server_func(event, data):
     """
     Mapping events to controller actions
     """
-    CONTROLLER.run_event(event, data)
+    if CONTROLLER:
+        CONTROLLER.run_event(event, data)
+    else:
+        print('CONTROLLER NOT INITIALIZED YET')
 
 
 def start_server():
@@ -41,6 +72,9 @@ def start_controller():
 
     print('STARTING FLIGHT CONTROLLER')
     CONTROLLER = controller.FlightController(SENSOR, MOTOR_FL, MOTOR_FR, MOTOR_BR, MOTOR_BL)
+    print('ARMING MOTORS')
+    CONTROLLER.arm_motors()
+    print('FINISHED ARMING')
 
 
 def main():
@@ -50,13 +84,6 @@ def main():
     """
     print('INITIALIZING DRONE')
 
-    # ARM MOTORS
-    print('ARMING MOTORS FL, FR, BR, BL')
-    MOTOR_FL.arm()
-    MOTOR_FR.arm()
-    MOTOR_BR.arm()
-    MOTOR_BL.arm()
-    print('FINISHED ARMING')
     start_server()
     start_controller()
     print('\n...\nREADY TO FLY')
@@ -67,11 +94,11 @@ def main():
 
 
 if __name__ == "__main__":
-    # These are here since they actually do something
-    MOTOR_FL = motor.Motor(pi, motor.FRONT_LEFT)
-    MOTOR_FR = motor.Motor(pi, motor.FRONT_RIGHT)
-    MOTOR_BR = motor.Motor(pi, motor.BACK_RIGHT)
-    MOTOR_BL = motor.Motor(pi, motor.BACK_LEFT)
+    # These are here since they actually do something on init
+    MOTOR_FL = motor.Motor(pi, MOTOR_FRONT_LEFT, MOTOR_CALIBRATION[MOTOR_FRONT_LEFT])
+    MOTOR_FR = motor.Motor(pi, MOTOR_FRONT_RIGHT, MOTOR_CALIBRATION[MOTOR_FRONT_RIGHT])
+    MOTOR_BR = motor.Motor(pi, MOTOR_BACK_RIGHT, MOTOR_CALIBRATION[MOTOR_BACK_RIGHT])
+    MOTOR_BL = motor.Motor(pi, MOTOR_BACK_LEFT, MOTOR_CALIBRATION[MOTOR_BACK_LEFT])
 
     SENSOR = sensor.Mpu(flip=True)
 
@@ -80,4 +107,4 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         CONTROLLER.halt()
-        print('Stopping flight controller')
+        print('\nStopping flight controller')

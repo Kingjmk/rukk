@@ -1,4 +1,0 @@
-numpy
-matplotlib
-pygame
-PyOpenGL

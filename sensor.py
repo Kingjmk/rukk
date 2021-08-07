@@ -33,6 +33,7 @@ class Mpu:
         self.last_read = 0
         self.__kalman_x = filters.KalmanAngle()
         self.__kalman_y = filters.KalmanAngle()
+        self.calibrate()
         self.thread = threading.Thread(target=self.update, daemon=True, args=(6050,))
         self.thread.start()
 
@@ -92,8 +93,6 @@ class Mpu:
         return k_angle_x, k_angle_y
 
     def update(self, *args, **kwargs):
-        self.calibrate()
-
         while True:
             now = time.time_ns()
             # Get time difference in seconds
