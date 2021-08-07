@@ -17,7 +17,7 @@ class FlightController:
     """
     Singleton for Flight controller
     """
-    cycle_speed = 0.05  # in Seconds
+    cycle_speed = 0.01  # in Seconds
     initial_throttle = 1000
     proportional_gain = 20.0
 
@@ -62,7 +62,7 @@ class FlightController:
         """
         Time duration before resetting controls to idle
         """
-        return datetime.timedelta(milliseconds=500)
+        return datetime.timedelta(milliseconds=250)
 
     def set_target(self, roll: float = 0, pitch: float = 0, yaw: float = 0):
         self.update_timestamp = datetime.datetime.now()

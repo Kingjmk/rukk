@@ -28,6 +28,17 @@ class BaseThread(threading.Thread):
         event, data = message.split(SEP_CHAR)
         self.target_func(event, data)
 
+    @classmethod
+    def _send(cls, sock, event, data=''):
+        """
+        Send message to socket
+        """
+        if isinstance(event, Event):
+            event = event.value
+
+        message = '%s%s%s' % (event, SEP_CHAR, data)
+        sock.send(message.encode('ascii'))
+
 
 class Client(BaseThread):
     """
@@ -40,10 +51,9 @@ class Client(BaseThread):
 
     def send(self, event, data=''):
         """
-        Send message to client
+        Send message to server
         """
-        message = '%s%s%s' % (event, SEP_CHAR, data)
-        self.sock.send(message.encode('ascii'))
+        self._send(self.sock, event, data=data)
 
     def listen(self):
         try:
@@ -74,25 +84,24 @@ class Server(BaseThread):
     """
     @property
     def connected(self):
-        return self._sock is not None
+        return self.sock is not None
 
     def __init__(self, thread_id, target_func, host=HOST, port: int = PORT):
         super().__init__(thread_id, target_func, host)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.sock.bind((host, port))
-        self.sock.listen(1)
-        self._sock = None
+        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server.bind((host, port))
+        self.server.listen(1)
+        self.sock = None
 
     def send(self, event, data=''):
         """
         Send message to client
         """
-        message = '%s%s%s' % (event, SEP_CHAR, data)
-        self._sock.send(message.encode('ascii'))
+        self._send(self.sock, event, data=data)
 
     def listen(self):
         try:
-            data = self._sock.recv(self.buf_size)
+            data = self.sock.recv(self.buf_size)
         except ConnectionResetError:
             return -1
 
@@ -105,7 +114,7 @@ class Server(BaseThread):
 
     def run(self):
         print('WAITING FOR CONNECTION')
-        self._sock, client_addr = self.sock.accept()
+        self.sock, client_addr = self.server.accept()
 
         print(f'CONNECTED TO {client_addr}')
         # Send finish initializing event to whoever is on the other side
@@ -115,8 +124,8 @@ class Server(BaseThread):
             if resp == -1:
                 break
 
-        self._sock.close()
-        self._sock = None
+        self.sock.close()
+        self.sock = None
         # WAIT FOR CONN AGAIN
         # YES THIS IS RECURSION THAT's THE POINT IT SHOULD RUN UNTIL THE END OF THE UNIVERSE (or battery)
         print('CONNECTION RESET, WAITING FOR NEW CONNECTION')
