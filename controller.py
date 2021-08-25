@@ -131,8 +131,8 @@ class FlightController:
         self.motor_br.pwm(self.motor_br.throttle + response_p)
 
     def idle(self):
-        self.set_target()
         self.set_throttle(self.initial_throttle)
+        self.set_target()
 
     def halt(self):
         for motor in self.motors:
@@ -140,22 +140,22 @@ class FlightController:
 
     def run_event(self, event, data):
         if Event.STOP == event:
-            self.set_target()
             self.set_throttle(0)
+            self.set_target()
 
             for motor in self.motors:
                 motor.halt(snooze=0)
 
         if Event.CONTROL == event:
             throttle, roll, pitch, yaw = utils.decode_control(data)
-            self.set_target(roll, pitch, yaw)
             self.set_throttle(throttle)
+            self.set_target(roll, pitch, yaw)
 
     def run(self):
         """
         Should run inside loop
         """
-        if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
+        if self.update_timestamp and self.update_timestamp + self.time_before_reset < datetime.datetime.now():
             self.idle()
 
         self.accelerate()
