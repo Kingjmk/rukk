@@ -71,7 +71,7 @@ def start_controller():
     global CONTROLLER
 
     print('STARTING FLIGHT CONTROLLER')
-    CONTROLLER = controller.FlightController(SENSOR, MOTOR_FL, MOTOR_FR, MOTOR_BR, MOTOR_BL)
+    CONTROLLER = controller.QuadController(SENSOR, MOTOR_FL, MOTOR_FR, MOTOR_BR, MOTOR_BL)
     print('ARMING MOTORS')
     CONTROLLER.arm_motors()
     print('FINISHED ARMING')

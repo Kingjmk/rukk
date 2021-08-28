@@ -28,6 +28,7 @@ class KeyboardController:
         # [ROLL, PITCH, YAW]
         self.rotation = [0, 0, 0]
 
+        self.rotation_angle = 90  # Rotation factor, currently this is just a flag since we dont have a compass meter yet
         self.move_angle = 15  # Change rate by degrees
         self.move_throttle = 50  # Change rate
 
@@ -35,12 +36,14 @@ class KeyboardController:
         # Pressed down state of all keys
         # TODO: Actually support input axis of gamepad in the future
         self._state = {
-            'up': False,
-            'down': False,
             'left': False,
             'right': False,
-            'space': False,
-            'shift': False,
+            'up': False,
+            'down': False,
+            'q': False,  # Rotation on YAW
+            'e': False,  # Rotation on YAW
+            'space': False,  # Throttle Increase
+            'shift': False,  # Throttle Decrease
         }
 
     def listen(self):
@@ -59,17 +62,23 @@ class KeyboardController:
         """
         while True:
             _state = self._state
+            roll_controls = [_state['left'], _state['right']]
+            if any(roll_controls) and not all(roll_controls):
+                self.rotation[0] = self.move_angle * (- 1 if _state['left'] else 1)
+            else:
+                self.rotation[0] = 0
+
             pitch_controls = [_state['up'], _state['down']]
             if any(pitch_controls) and not all(pitch_controls):
                 self.rotation[1] = self.move_angle * (- 1 if _state['up'] else 1)
             else:
                 self.rotation[1] = 0
 
-            roll_controls = [_state['left'], _state['right']]
-            if any(roll_controls) and not all(roll_controls):
-                self.rotation[0] = self.move_angle * (- 1 if _state['left'] else 1)
+            yaw_controls = [_state['q'], _state['e']]
+            if any(yaw_controls) and not all(yaw_controls):
+                self.rotation[2] = self.rotation_angle * (- 1 if _state['q'] else 1)
             else:
-                self.rotation[0] = 0
+                self.rotation[2] = 0
 
             throttle_controls = [_state['space'], _state['shift']]
             if any(throttle_controls) and not all(throttle_controls):

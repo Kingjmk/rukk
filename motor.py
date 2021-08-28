@@ -16,7 +16,7 @@ class Motor:
 
     def halt(self, snooze=1) -> None:
         """
-        Switch of the GPIO, and un-arm the ESC.
+        Switch off the GPIO, and un-arm the ESC.
         Ensure this runs, even on unclean shutdown.
         """
         self.pwm(throttle=self.MIN_THROTTLE, snooze=snooze)  # This 1 sec seems to *hasten* shutdown.
