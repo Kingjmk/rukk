@@ -7,6 +7,8 @@ from events import Event
 HOST = '0.0.0.0'
 PORT = 7777
 SEP_CHAR = '#'
+EMPTY_CHAR = '_'
+END_CHAR = '$'
 
 
 class BaseThread(threading.Thread):
@@ -21,22 +23,32 @@ class BaseThread(threading.Thread):
         self.port = port
         self.host = host
 
-    def handle_message(self, message):
+    def handle_message(self, messages):
         """
         Handle Incoming event and run whatever in response
         """
-        event, data = message.split(SEP_CHAR)
-        self.target_func(event, data)
+        for message in messages.split(END_CHAR):
+            message = message.strip('')
+
+            if not message or message == '':
+                continue
+            try:
+                event, data = message.split(SEP_CHAR)
+            except ValueError as e:
+                print(f'ERROR ON MESSAGE: {message}')
+                raise e
+
+            self.target_func(event, data)
 
     @classmethod
-    def _send(cls, sock, event, data=''):
+    def _send(cls, sock, event, data=EMPTY_CHAR):
         """
         Send message to socket
         """
         if isinstance(event, Event):
             event = event.value
 
-        message = '%s%s%s' % (event, SEP_CHAR, data)
+        message = '%s%s%s%s' % (event, SEP_CHAR, data, END_CHAR)
         sock.send(message.encode('ascii'))
 
 
@@ -49,7 +61,7 @@ class Client(BaseThread):
         self.sock = socket.socket()
         self.sock.connect((host, port))
 
-    def send(self, event, data=''):
+    def send(self, event, data=EMPTY_CHAR):
         """
         Send message to server
         """
@@ -93,7 +105,7 @@ class Server(BaseThread):
         self.server.listen(1)
         self.sock = None
 
-    def send(self, event, data=''):
+    def send(self, event, data=EMPTY_CHAR):
         """
         Send message to client
         """

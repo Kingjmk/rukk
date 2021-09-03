@@ -125,6 +125,7 @@ class QuadController:
         rotation_vector = [
             math.cos(rotation_angle) * math.radians(x_angle) - math.sin(rotation_angle) * math.radians(y_angle),
             math.sin(rotation_angle) * math.radians(x_angle) + math.cos(rotation_angle) * math.radians(y_angle),
+            z_angle,
         ]
 
         """
@@ -140,21 +141,19 @@ class QuadController:
         according to that response.
         """
         if DEBUG:
-            print(f"""
-            \n----
-            {self.motor_fl.throttle - response_p - response_y}
-            {self.motor_fr.throttle - response_r + response_y}\n\n
-            {self.motor_bl.throttle + response_r + response_y}
-            {self.motor_br.throttle + response_p - response_y}\n
-            """)
+            print(
+                f"{self.motor_fl.throttle + response_p - response_y} {self.motor_fr.throttle + response_r + response_y}\n" +
+                f"{self.motor_bl.throttle - response_r + response_y} {self.motor_br.throttle - response_p - response_y}\n" +
+                f"{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_ROLL_ANGLE}\n"
+            )
 
         # ROLL AXIS
-        self.motor_fr.pwm(self.motor_fr.throttle - response_r + response_y)
-        self.motor_bl.pwm(self.motor_bl.throttle + response_r + response_y)
+        self.motor_fr.pwm(self.motor_fr.throttle + response_r + response_y)
+        self.motor_bl.pwm(self.motor_bl.throttle - response_r + response_y)
 
         # PITCH AXIS
-        self.motor_fl.pwm(self.motor_fl.throttle - response_p - response_y)
-        self.motor_br.pwm(self.motor_br.throttle + response_p - response_y)
+        self.motor_fl.pwm(self.motor_fl.throttle + response_p - response_y)
+        self.motor_br.pwm(self.motor_br.throttle - response_p - response_y)
 
     def idle(self):
         self.set_throttle(self.initial_throttle)
@@ -165,17 +164,24 @@ class QuadController:
             motor.halt()
 
     def run_event(self, event, data):
-        if Event.STOP == event:
+        if event == Event.STOP.value:
             self.set_throttle(0)
             self.set_target()
 
             for motor in self.motors:
                 motor.halt(snooze=0)
+            return
 
-        elif Event.CONTROL == event:
+        elif event == Event.CONTROL.value:
             throttle, roll, pitch, yaw = utils.decode_control(data)
             self.set_throttle(throttle)
             self.set_target(roll, pitch, yaw)
+            return
+        elif event in [Event.CONNECTED]:
+            # NOOP
+            return
+
+        raise Exception(f'EVENT {event} UNKNOWN')
 
     def run(self):
         """

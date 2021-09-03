@@ -40,10 +40,10 @@ class KeyboardController:
             'right': False,
             'up': False,
             'down': False,
-            'q': False,  # Rotation on YAW
-            'e': False,  # Rotation on YAW
-            'space': False,  # Throttle Increase
-            'shift': False,  # Throttle Decrease
+            'a': False,  # Rotation on YAW
+            'd': False,  # Rotation on YAW
+            'w': False,  # Throttle Increase
+            's': False,  # Throttle Decrease
         }
 
     def listen(self):
@@ -74,19 +74,20 @@ class KeyboardController:
             else:
                 self.rotation[1] = 0
 
-            yaw_controls = [_state['q'], _state['e']]
+            yaw_controls = [_state['a'], _state['d']]
             if any(yaw_controls) and not all(yaw_controls):
-                self.rotation[2] = self.rotation_angle * (- 1 if _state['q'] else 1)
+                self.rotation[2] = self.rotation_angle * (- 1 if _state['d'] else 1)
             else:
                 self.rotation[2] = 0
 
-            throttle_controls = [_state['space'], _state['shift']]
+            throttle_controls = [_state['w'], _state['s']]
             if any(throttle_controls) and not all(throttle_controls):
-                self.throttle += self.move_throttle * (- 1 if _state['shift'] else 1)
+                self.throttle += self.move_throttle * (- 1 if _state['s'] else 1)
                 self.throttle = utils.clamp(self.throttle, self.MIN_THROTTLE, self.MAX_THROTTLE)
 
             # And Send by network
             CLIENT_THREAD.send(Event.CONTROL, utils.encode_control(self.throttle, *self.rotation))
+            WINDOW.write_event_value(OUTPUT_EVENT, utils.encode_control(self.throttle, *self.rotation))
             time.sleep(self.cycle_speed)
 
 
@@ -111,14 +112,14 @@ def init(host, port):
     CONTROLLER_THREAD.start()
 
 
-def main(host='127.0.0.1', port=7777, *args):
+def main(host='raspberrypi', port=7777, *args):
     global WINDOW
 
     layout = [
         [sg.Text('Output', font='Any 15')],
         [sg.Multiline(
             size=(65, 20), key='-ML-', autoscroll=True, reroute_stdout=True,
-            write_only=True, reroute_cprint=True
+            write_only=True, reroute_cprint=True, disabled=True,
         )],
     ]
 
