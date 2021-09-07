@@ -27,6 +27,8 @@ class BaseThread(threading.Thread):
         """
         Handle Incoming event and run whatever in response
         """
+
+        # This For loop will handle if the socket sent multiple messages at once
         for message in messages.split(END_CHAR):
             message = message.strip('')
 

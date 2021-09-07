@@ -121,7 +121,7 @@ class QuadController:
         to get target rotation based on actual X shape we need to rotate the angle vector by 45 degrees
         """
         x_angle, y_angle, z_angle = self.angles
-        rotation_angle = math.radians(45)
+        rotation_angle = math.radians(-45)
         rotation_vector = [
             math.cos(rotation_angle) * math.radians(x_angle) - math.sin(rotation_angle) * math.radians(y_angle),
             math.sin(rotation_angle) * math.radians(x_angle) + math.cos(rotation_angle) * math.radians(y_angle),
@@ -132,8 +132,8 @@ class QuadController:
         In these two lines the error is calculated by the difference of the 
         actual angle - the desired angle.
         """
-        response_r = self.pid_r(rotation_vector[0] - self.TARGET_ROLL_ANGLE)
-        response_p = -1 * (self.pid_p(rotation_vector[1] - self.TARGET_PITCH_ANGLE))
+        response_r = 1 * self.pid_r(rotation_vector[0] - self.TARGET_ROLL_ANGLE)
+        response_p = 1 * (self.pid_p(rotation_vector[1] - self.TARGET_PITCH_ANGLE))
         response_y = -1 * self.pid_y(rotation_vector[2] - self.TARGET_YAW_ANGLE)
 
         """
@@ -144,7 +144,7 @@ class QuadController:
             print(
                 f"{self.motor_fl.throttle + response_p - response_y} {self.motor_fr.throttle + response_r + response_y}\n" +
                 f"{self.motor_bl.throttle - response_r + response_y} {self.motor_br.throttle - response_p - response_y}\n" +
-                f"{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_ROLL_ANGLE}\n"
+                f"{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
             )
 
         # ROLL AXIS
@@ -177,7 +177,8 @@ class QuadController:
             self.set_throttle(throttle)
             self.set_target(roll, pitch, yaw)
             return
-        elif event in [Event.CONNECTED]:
+        elif event in [Event.CONNECTED.value]:
+            print('\nCONNECTED TO CLIENT\n')
             # NOOP
             return
 
@@ -187,8 +188,8 @@ class QuadController:
         """
         Should run inside loop
         """
-        if self.update_timestamp and self.update_timestamp + self.time_before_reset < datetime.datetime.now():
-            self.idle()
+#        if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
+#            self.idle()
 
         self.accelerate()
         self.balance()
