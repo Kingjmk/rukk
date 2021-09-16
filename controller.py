@@ -18,7 +18,7 @@ class QuadController:
     Singleton for Flight controller
     """
     cycle_speed = 0.01  # in Seconds
-    initial_throttle = 1000
+    initial_throttle = 800
     proportional_gain = 20.0
 
     def __init__(self, sensor, *motors):
@@ -48,7 +48,7 @@ class QuadController:
         self.TARGET_PITCH_ANGLE = 0
         self.pid_p = None
 
-        self.KY = [self.proportional_gain, 0, 0]
+        self.KY = [self.proportional_gain * 0.1, 0, 0]
         self.TARGET_YAW_ANGLE = 0
         self.pid_y = None
 
@@ -133,7 +133,7 @@ class QuadController:
         actual angle - the desired angle.
         """
         response_r = 1 * self.pid_r(rotation_vector[0] - self.TARGET_ROLL_ANGLE)
-        response_p = 1 * (self.pid_p(rotation_vector[1] - self.TARGET_PITCH_ANGLE))
+        response_p = 1 * self.pid_p(rotation_vector[1] - self.TARGET_PITCH_ANGLE)
         response_y = -1 * self.pid_y(rotation_vector[2] - self.TARGET_YAW_ANGLE)
 
         """
@@ -142,18 +142,19 @@ class QuadController:
         """
         if DEBUG:
             print(
-                f"{self.motor_fl.throttle + response_p - response_y} {self.motor_fr.throttle + response_r + response_y}\n" +
-                f"{self.motor_bl.throttle - response_r + response_y} {self.motor_br.throttle - response_p - response_y}\n" +
-                f"{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
+                f"{self.motor_fl.throttle + response_p} {self.motor_fr.throttle + response_r}\n"
+                f"{self.motor_bl.throttle - response_r} {self.motor_br.throttle - response_p}\n"
+                f"real  :{rotation_vector[0]}, {rotation_vector[1]}, {rotation_vector[2]}\n"
+                f"target:{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
             )
 
         # ROLL AXIS
-        self.motor_fr.pwm(self.motor_fr.throttle + response_r + response_y)
-        self.motor_bl.pwm(self.motor_bl.throttle - response_r + response_y)
+        self.motor_fr.pwm(self.motor_fr.throttle + response_r)
+        self.motor_bl.pwm(self.motor_bl.throttle - response_r)
 
         # PITCH AXIS
-        self.motor_fl.pwm(self.motor_fl.throttle + response_p - response_y)
-        self.motor_br.pwm(self.motor_br.throttle - response_p - response_y)
+        self.motor_fl.pwm(self.motor_fl.throttle + response_p)
+        self.motor_br.pwm(self.motor_br.throttle - response_p)
 
     def idle(self):
         self.set_throttle(self.initial_throttle)
@@ -188,6 +189,7 @@ class QuadController:
         """
         Should run inside loop
         """
+        # TODO: fix this so the thing wont fly into the void
 #        if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
 #            self.idle()
 
