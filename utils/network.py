@@ -1,3 +1,4 @@
+import random
 import socket
 import threading
 from utils.events import Event
@@ -16,10 +17,10 @@ class BaseThread(threading.Thread):
     encoding = 'ascii'
     daemon = True
 
-    def __init__(self, thread_id, target_func, host=HOST, port: int = PORT):
+    def __init__(self, target_func, host=HOST, port: int = PORT):
         super().__init__()
         self.target_func = target_func
-        self.threadId = thread_id
+        self.threadId = random.randint(1, 1000)
         self.port = port
         self.host = host
 
@@ -58,8 +59,8 @@ class Client(BaseThread):
     """
     Communication Client for RPI
     """
-    def __init__(self, thread_id, target_func, host=HOST, port: int = PORT):
-        super().__init__(thread_id, target_func, host)
+    def __init__(self, target_func, host=HOST, port: int = PORT):
+        super().__init__(target_func, host)
         self.sock = socket.socket()
         self.sock.connect((host, port))
 
@@ -100,8 +101,8 @@ class Server(BaseThread):
     def connected(self):
         return self.sock is not None
 
-    def __init__(self, thread_id, target_func, host=HOST, port: int = PORT):
-        super().__init__(thread_id, target_func, host)
+    def __init__(self, target_func, host=HOST, port: int = PORT):
+        super().__init__(target_func, host)
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.bind((host, port))
         self.server.listen(1)

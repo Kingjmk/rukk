@@ -5,6 +5,7 @@ This is the client code, to be used to control PI Remotely using
 keyboard or gamepad
 """
 import sys
+import socket
 import threading
 from multiprocessing import freeze_support
 from utils import network
@@ -13,25 +14,46 @@ import PySimpleGUI as sg
 from _client.controller import GamepadController
 
 
-OUTPUT_EVENT = '-OUTPUT-'
+EVENT_OUTPUT = '-OUTPUT-'
+EVENT_RECONNECT = '-RECONNECT-'
+
+CLIENT_THREAD = None
+CONTROLLER_THREAD = None
 
 
 def listen_client_func(_event, data):
     message = '%s -> %s' % (_event, data)
-    WINDOW.write_event_value(OUTPUT_EVENT, message)
+    WINDOW.write_event_value(EVENT_OUTPUT, message)
 
 
-def init(host, port):
-    global CLIENT_THREAD, CONTROLLER_THREAD, CONTROLLER
-    WINDOW.write_event_value(OUTPUT_EVENT, 'CONNECTING TO %s:%s' % (host, port))
-    CLIENT_THREAD = network.Client(1, listen_client_func, host=host, port=int(port))
-    CLIENT_THREAD.start()
-    CLIENT_THREAD.send(Event.CONNECTED)
+def connect(host, port):
+    global CLIENT_THREAD, CONTROLLER_THREAD
+
+    # RESET THREADS
+    if CLIENT_THREAD:
+        CLIENT_THREAD._stop()
+
+    if CONTROLLER_THREAD:
+        CONTROLLER_THREAD._stop()
+
+    CLIENT_THREAD = None
+    CONTROLLER_THREAD = None
+
+    WINDOW.write_event_value(EVENT_OUTPUT, 'CONNECTING TO %s:%s' % (host, port))
+    try:
+        CLIENT_THREAD = network.Client(listen_client_func, host=host, port=int(port))
+        CLIENT_THREAD.start()
+        CLIENT_THREAD.send(Event.CONNECTED)
+    except (socket.error, socket.gaierror, socket.herror):
+        WINDOW.write_event_value(EVENT_OUTPUT, 'CONNECTION FAILED TO %s:%s' % (host, port))
+        return False
 
     # RUN INPUT THREAD
-    CONTROLLER = GamepadController(CLIENT_THREAD.send)
-    CONTROLLER_THREAD = threading.Thread(target=CONTROLLER.run, daemon=True)
+    controller = GamepadController(CLIENT_THREAD.send)
+    CONTROLLER_THREAD = threading.Thread(target=controller.run, daemon=True)
     CONTROLLER_THREAD.start()
+
+    return True
 
 
 def main(host='raspberrypi', port=7777, *args):
@@ -42,12 +64,12 @@ def main(host='raspberrypi', port=7777, *args):
         [sg.Multiline(
             size=(65, 20), key='-ML-', autoscroll=True, reroute_stdout=True,
             write_only=True, reroute_cprint=True, disabled=True,
-        )],
+        ), sg.Button('Reconnect', key=EVENT_RECONNECT)],
     ]
 
     WINDOW = sg.Window('RemoteControl', layout, finalize=True)
 
-    init(host, port)
+    connect(host, port)
 
     # Event Loop
     while True:
@@ -55,9 +77,11 @@ def main(host='raspberrypi', port=7777, *args):
         if event == sg.WIN_CLOSED or event == 'Exit':
             break
 
-        elif event == OUTPUT_EVENT:
-            output_message = values[OUTPUT_EVENT]
+        elif event == EVENT_OUTPUT:
+            output_message = values[EVENT_OUTPUT]
             sg.cprint(output_message)
+        elif event == EVENT_RECONNECT:
+            connect(host, port)
 
     WINDOW.close()
 

@@ -63,7 +63,7 @@ def start_server():
     global SERVER_THREAD
 
     print('STARTING SERVER')
-    SERVER_THREAD = network.Server(1, listen_server_func)
+    SERVER_THREAD = network.Server(listen_server_func)
     SERVER_THREAD.start()
 
 
