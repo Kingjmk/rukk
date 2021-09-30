@@ -1,6 +1,6 @@
 import socket
 import threading
-from events import Event
+from utils.events import Event
 
 
 # Allow any (manage os side)

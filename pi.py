@@ -6,10 +6,10 @@ SHOULD RUN ON PI STARTUP and beep or something
 """
 import os
 import time
-import motor
-import sensor
-import controller
 from utils import network
+from _pi import (
+    motor, sensor, controller
+)
 
 os.system("sudo pigpiod")
 time.sleep(3)

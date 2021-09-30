@@ -2,7 +2,7 @@ import math
 import time
 import datetime
 from simple_pid import PID
-from events import Event
+from utils.events import Event
 import utils
 
 DEBUG = True
