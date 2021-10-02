@@ -1,7 +1,7 @@
 import random
 import socket
 import threading
-from utils.events import Event
+from enum import Enum
 
 # Allow any (manage os side)
 HOST = '0.0.0.0'
@@ -9,6 +9,12 @@ PORT = 7777
 SEP_CHAR = '#'
 EMPTY_CHAR = '_'
 END_CHAR = '$'
+
+
+class Event(Enum):
+    CONNECTED = 'CONNECTED'
+    CONTROL = 'CONTROL'
+    STOP = 'STOP'
 
 
 class BaseThread(threading.Thread):

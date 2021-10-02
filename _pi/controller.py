@@ -2,8 +2,8 @@ import math
 import time
 import datetime
 from simple_pid import PID
-from utils.events import Event
 import utils
+from utils import network
 
 DEBUG = True
 
@@ -176,7 +176,7 @@ class QuadController:
             motor.halt()
 
     def run_event(self, event, data):
-        if event == Event.STOP.value:
+        if event == network.Event.STOP.value:
             self.set_throttle(self.min_throttle)
             self.set_target()
 
@@ -184,13 +184,13 @@ class QuadController:
                 motor.halt(snooze=0)
             return
 
-        elif event == Event.CONTROL.value:
+        elif event == network.Event.CONTROL.value:
             throttle_pct, roll, pitch, yaw = utils.decode_control(data)
             throttle = self.throttle_pct_pwm(throttle_pct)
             self.set_throttle(throttle)
             self.set_target(roll, pitch, yaw)
             return
-        elif event in [Event.CONNECTED.value]:
+        elif event in [network.Event.CONNECTED.value]:
             print('\nCONNECTED TO CLIENT\n')
             # NOOP
             return

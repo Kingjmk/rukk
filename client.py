@@ -7,12 +7,10 @@ keyboard or gamepad
 import sys
 import socket
 import threading
+import PySimpleGUI as sg
 from multiprocessing import freeze_support
 from utils import network
-from utils.events import Event
-import PySimpleGUI as sg
 from _client.controller import GamepadController
-
 
 EVENT_OUTPUT = '-OUTPUT-'
 EVENT_RECONNECT = '-RECONNECT-'
@@ -43,7 +41,7 @@ def connect(host, port):
     try:
         CLIENT_THREAD = network.Client(listen_client_func, host=host, port=int(port))
         CLIENT_THREAD.start()
-        CLIENT_THREAD.send(Event.CONNECTED)
+        CLIENT_THREAD.send(network.Event.CONNECTED)
     except (socket.error, socket.gaierror, socket.herror):
         WINDOW.write_event_value(EVENT_OUTPUT, 'CONNECTION FAILED TO %s:%s' % (host, port))
         return False

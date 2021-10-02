@@ -28,9 +28,8 @@ MOTOR GPIO MAPPING - CLOCK WISE
         /         \
       22    back   27
 
-17-22 is X or ROLL
-4-27 is Y or PITCH
-
+17-22 is X or ROLL or sideways after -45deg
+4-27 is Y or PITCH or tilt forward or backwards after -45deg
 
 Z is vertical or YAW
 
@@ -80,7 +79,7 @@ def start_controller():
 def main():
     """
     MAIN PROGRAM LOOP
-    launch threads and
+    launch server, controller and hardware
     """
     print('INITIALIZING DRONE')
 
