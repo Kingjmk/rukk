@@ -5,7 +5,7 @@ def clamp(v, minn, maxn):
 def decode_control(data):
     # Data should always have 4 keys
     throttle, roll, pitch, yaw = data.split(',')
-    return int(throttle), int(roll), int(pitch), int(yaw)
+    return float(throttle), int(roll), int(pitch), int(yaw)
 
 
 def encode_control(throttle, roll, pitch, yaw):

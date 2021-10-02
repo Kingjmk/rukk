@@ -3,7 +3,6 @@ import socket
 import threading
 from utils.events import Event
 
-
 # Allow any (manage os side)
 HOST = '0.0.0.0'
 PORT = 7777
@@ -59,6 +58,7 @@ class Client(BaseThread):
     """
     Communication Client for RPI
     """
+
     def __init__(self, target_func, host=HOST, port: int = PORT):
         super().__init__(target_func, host)
         self.sock = socket.socket()
@@ -97,6 +97,7 @@ class Server(BaseThread):
     """
     Communication Server for RPI
     """
+
     @property
     def connected(self):
         return self.sock is not None

@@ -18,7 +18,9 @@ class QuadController:
     Singleton for Flight controller
     """
     cycle_speed = 0.01  # in Seconds
-    initial_throttle = 800
+    int_throttle = 800
+    max_throttle = 2000
+    min_throttle = 650
     proportional_gain = 20.0
 
     def __init__(self, sensor, *motors):
@@ -34,7 +36,7 @@ class QuadController:
         self.motor_bl = motors[3]
 
         # THROTTLE
-        self.throttle = self.initial_throttle
+        self.throttle = self.int_throttle
 
         """
         The quadcopter balancing is done via a PID controller
@@ -88,6 +90,15 @@ class QuadController:
         # YAW
         self.TARGET_YAW_ANGLE = yaw
         self.pid_y = PID(Kp=self.KY[0], Ki=self.KY[1], Kd=self.KY[2], setpoint=self.TARGET_YAW_ANGLE)
+
+    @classmethod
+    def throttle_pct_pwm(cls, percentage: float) -> int:
+        """
+        Get PWM Throttle from percentage (0.0, 100.0)
+        """
+        percentage /= 100.0
+        diff = cls.max_throttle - cls.min_throttle
+        return int(cls.min_throttle + diff * percentage)
 
     def set_throttle(self, throttle: int):
         """
@@ -157,7 +168,7 @@ class QuadController:
         self.motor_br.pwm(self.motor_br.throttle - response_p)
 
     def idle(self):
-        self.set_throttle(self.initial_throttle)
+        self.set_throttle(self.min_throttle)
         self.set_target()
 
     def halt(self):
@@ -166,7 +177,7 @@ class QuadController:
 
     def run_event(self, event, data):
         if event == Event.STOP.value:
-            self.set_throttle(0)
+            self.set_throttle(self.min_throttle)
             self.set_target()
 
             for motor in self.motors:
@@ -174,7 +185,8 @@ class QuadController:
             return
 
         elif event == Event.CONTROL.value:
-            throttle, roll, pitch, yaw = utils.decode_control(data)
+            throttle_pct, roll, pitch, yaw = utils.decode_control(data)
+            throttle = self.throttle_pct_pwm(throttle_pct)
             self.set_throttle(throttle)
             self.set_target(roll, pitch, yaw)
             return
@@ -190,8 +202,8 @@ class QuadController:
         Should run inside loop
         """
         # TODO: fix this so the thing wont fly into the void
-#        if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
-#            self.idle()
+        # if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
+        #     self.idle()
 
         self.accelerate()
         self.balance()

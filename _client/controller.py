@@ -4,10 +4,10 @@ import utils
 from utils.events import Event
 import pygame
 
-
-MAX_THROTTLE = 2400
-MIN_THROTTLE = 650
-INT_THROTTLE = 800  # Initial Throttle
+# Throttle in percentage
+INT_THROTTLE = 20
+MAX_THROTTLE = 100
+MIN_THROTTLE = 0
 
 
 class KeyboardController:
@@ -20,7 +20,7 @@ class KeyboardController:
         # YAW Rotation factor, currently this is just a flag since we dont have a compass meter yet
         self.rotation_angle = 90
         self.move_angle = 15  # Change rate by degrees
-        self.move_throttle = 50  # Change rate
+        self.move_throttle = 5  # Change rate
 
         self.cycle_speed = 0.05
         # Pressed down state of all keys
@@ -91,6 +91,7 @@ class GamepadController:
     |                                                          |
     ------------------------------------------------------------
     """
+
     def __init__(self, send_callback):
         self.send_callback = send_callback
         self.throttle = INT_THROTTLE
@@ -99,9 +100,7 @@ class GamepadController:
 
         # YAW Rotation factor, currently this is just a flag since we dont have a compass meter yet
         self.rotation_angle = 90
-        self.move_angle = 25  # Max angle -/+
-        self.move_throttle = 50  # Change rate
-
+        self.max_angle = 25  # Max angle -/+
         self.cycle_speed = 0.05
 
         # TODO: CALIBRATE CORRECTLY
@@ -125,13 +124,13 @@ class GamepadController:
 
             roll_axis = self.joystick.get_axis(self.AXIS['ROLL'])
             if abs(roll_axis) > 0.1:
-                self.rotation[0] = int(self.move_angle * roll_axis)
+                self.rotation[0] = int(self.max_angle * roll_axis)
             else:
                 self.rotation[0] = 0
 
             pitch_axis = self.joystick.get_axis(self.AXIS['PITCH'])
             if abs(pitch_axis):
-                self.rotation[1] = int(self.move_angle * pitch_axis)
+                self.rotation[1] = int(self.max_angle * pitch_axis)
             else:
                 self.rotation[1] = 0
 
@@ -142,9 +141,9 @@ class GamepadController:
             else:
                 self.rotation[2] = 0
 
-            throttle_axis = self.joystick.get_axis(self.AXIS['THROTTLE'])
-            self.throttle += self.move_throttle * throttle_axis
-            self.throttle = utils.clamp(self.throttle, MIN_THROTTLE, MAX_THROTTLE)
+            # This normalizes -1.0 to 1.0 range to be 0, 1.0 range * 100 is percentage
+            throttle_axis = (self.joystick.get_axis(self.AXIS['THROTTLE']) + 1) / 2.0
+            self.throttle = utils.clamp(round(throttle_axis * 100, 2), MIN_THROTTLE, MAX_THROTTLE)
 
             self.send_callback(Event.CONTROL, utils.encode_control(self.throttle, *self.rotation))
             time.sleep(self.cycle_speed)
