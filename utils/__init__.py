@@ -10,3 +10,13 @@ def decode_control(data):
 
 def encode_control(throttle, roll, pitch, yaw):
     return '%d,%d,%d,%d' % (throttle, roll, pitch, yaw)
+
+
+def decode_telemetry_record(data):
+    # Data should always have 4 keys
+    name, data = data.split(',')
+    return name, data
+
+
+def encode_telemetry_record(name, value):
+    return '%s,%s' % (name, value)

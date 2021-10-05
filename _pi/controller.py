@@ -2,8 +2,8 @@ import math
 import time
 import datetime
 from simple_pid import PID
-import utils
 from utils import network
+import utils
 
 DEBUG = True
 
@@ -197,7 +197,7 @@ class QuadController:
 
         raise Exception(f'EVENT {event} UNKNOWN')
 
-    def run(self):
+    def loop(self):
         """
         Should run inside loop
         """
@@ -208,4 +208,7 @@ class QuadController:
         self.accelerate()
         self.balance()
 
-        time.sleep(self.cycle_speed)
+    def run(self):
+        while True:
+            self.loop()
+            time.sleep(self.cycle_speed)

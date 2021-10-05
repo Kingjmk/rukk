@@ -88,8 +88,8 @@ def main():
     print('\n...\nREADY TO FLY')
 
     # TODO: Maybe move to thread?
-    while True:
-        CONTROLLER.run()
+    # Infinite loop
+    CONTROLLER.run()
 
 
 if __name__ == "__main__":

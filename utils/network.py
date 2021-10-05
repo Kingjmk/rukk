@@ -6,15 +6,16 @@ from enum import Enum
 # Allow any (manage os side)
 HOST = '0.0.0.0'
 PORT = 7777
-SEP_CHAR = '#'
-EMPTY_CHAR = '_'
-END_CHAR = '$'
+SEP_CHAR = '##'
+EMPTY_CHAR = '__'
+END_CHAR = '$$'
 
 
 class Event(Enum):
     CONNECTED = 'CONNECTED'
     CONTROL = 'CONTROL'
     STOP = 'STOP'
+    TELEMETRY = 'TELEMETRY'
 
 
 class BaseThread(threading.Thread):
@@ -57,7 +58,7 @@ class BaseThread(threading.Thread):
             event = event.value
 
         message = '%s%s%s%s' % (event, SEP_CHAR, data, END_CHAR)
-        sock.send(message.encode('ascii'))
+        sock.send(message.encode(cls.encoding))
 
 
 class Client(BaseThread):

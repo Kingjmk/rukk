@@ -1,3 +1,4 @@
 pigpio==1.78
 smbus2==0.4.1
 simple-pid==1.0.1
+psutil==5.8.0
