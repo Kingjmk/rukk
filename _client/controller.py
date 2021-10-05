@@ -103,16 +103,16 @@ class GamepadController:
         self.max_angle = 25  # Max angle -/+
         self.cycle_speed = 0.05
 
-        # TODO: CALIBRATE CORRECTLY
         self.AXIS = {
-            'ROLL': 0,
-            'PITCH': 1,
-            'YAW': 2,
-            'THROTTLE': 3
+            'ROLL': 2,
+            'PITCH': 4,
+            'YAW': 0,
+            'THROTTLE': 1
         }
 
+        pygame.init()
+        pygame.joystick.init()
         self.joystick = pygame.joystick.Joystick(0)
-        self.joystick.init()
 
     def run(self):
         """
@@ -123,12 +123,12 @@ class GamepadController:
             pygame.event.pump()
 
             roll_axis = self.joystick.get_axis(self.AXIS['ROLL'])
-            if abs(roll_axis) > 0.1:
+            if abs(roll_axis):
                 self.rotation[0] = int(self.max_angle * roll_axis)
             else:
                 self.rotation[0] = 0
 
-            pitch_axis = self.joystick.get_axis(self.AXIS['PITCH'])
+            pitch_axis = self.joystick.get_axis(self.AXIS['PITCH']) * -1
             if abs(pitch_axis):
                 self.rotation[1] = int(self.max_angle * pitch_axis)
             else:
@@ -136,14 +136,15 @@ class GamepadController:
 
             yaw_axis = self.joystick.get_axis(self.AXIS['YAW'])
 
-            if abs(yaw_axis) > 0.1:
+            if abs(yaw_axis):
                 self.rotation[2] = self.rotation_angle * (-1 if yaw_axis < 0 else 1)
             else:
                 self.rotation[2] = 0
 
             # This normalizes -1.0 to 1.0 range to be 0, 1.0 range * 100 is percentage
-            throttle_axis = (self.joystick.get_axis(self.AXIS['THROTTLE']) + 1) / 2.0
+            throttle_axis = (self.joystick.get_axis(self.AXIS['THROTTLE']) * -1 + 1) / 2.0
             self.throttle = utils.clamp(round(throttle_axis * 100, 2), MIN_THROTTLE, MAX_THROTTLE)
 
             self.send_callback(network.Event.CONTROL, utils.encode_control(self.throttle, *self.rotation))
             time.sleep(self.cycle_speed)
+            #print(f'{self.throttle}, {self.rotation[0]}, {self.rotation[1]}, {self.rotation[2]}')
