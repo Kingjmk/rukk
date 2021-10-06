@@ -2,10 +2,7 @@ import math
 import time
 import datetime
 from simple_pid import PID
-from utils import network
-import utils
-
-DEBUG = True
+from utils import network, helpers
 
 
 def ease_in(value: int, target: int):
@@ -161,13 +158,12 @@ class QuadController:
         self.motor_fl.pwm(self.throttle + response_p)
         self.motor_br.pwm(self.throttle - response_p)
 
-        if DEBUG:
-            print(
-                f"{self.motor_fl.throttle} {self.motor_fr.throttle}\n"
-                f"{self.motor_bl.throttle} {self.motor_br.throttle}\n"
-                f"real  :{rotation_vector[0]}, {rotation_vector[1]}, {rotation_vector[2]}\n"
-                f"target:{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
-            )
+        print(
+            f"{self.motor_fl.throttle} {self.motor_fr.throttle}\n"
+            f"{self.motor_bl.throttle} {self.motor_br.throttle}\n"
+            f"real  :{rotation_vector[0]}, {rotation_vector[1]}, {rotation_vector[2]}\n"
+            f"target:{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
+        )
 
     def idle(self):
         self.set_throttle(self.min_throttle)
@@ -187,7 +183,7 @@ class QuadController:
             return
 
         elif event == network.Event.CONTROL.value:
-            throttle_pct, roll, pitch, yaw = utils.decode_control(data)
+            throttle_pct, roll, pitch, yaw = helpers.decode_control(data)
             throttle = self.throttle_pct_pwm(throttle_pct)
             self.set_throttle(throttle)
             self.set_rotation(roll, pitch, yaw)

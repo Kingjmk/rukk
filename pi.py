@@ -6,7 +6,8 @@ SHOULD RUN ON PI STARTUP and beep or something
 """
 import os
 import time
-from utils import network
+import threading
+from utils import network, telemetry
 from _pi import (
     motor, sensor, controller
 )
@@ -59,21 +60,26 @@ def listen_server_func(event, data):
 
 
 def start_server():
-    global SERVER_THREAD
+    global TELEMETRY_THREAD, SERVER_THREAD
 
-    print('STARTING SERVER')
+    print('STARTING SERVER...')
     SERVER_THREAD = network.Server(listen_server_func)
     SERVER_THREAD.start()
+
+    print('STARTING TELEMETRY...')
+    telemetry_handler = telemetry.Telemetry(SERVER_THREAD.send)
+    TELEMETRY_THREAD = threading.Thread(target=telemetry_handler.run, daemon=True)
+    TELEMETRY_THREAD.start()
 
 
 def start_controller():
     global CONTROLLER
 
-    print('STARTING FLIGHT CONTROLLER')
+    print('STARTING FLIGHT CONTROLLER...')
     CONTROLLER = controller.QuadController(SENSOR, MOTOR_FL, MOTOR_FR, MOTOR_BR, MOTOR_BL)
-    print('ARMING MOTORS')
+    print('ARMING MOTORS...')
     CONTROLLER.arm_motors()
-    print('FINISHED ARMING')
+    print('FINISHED ARMING!')
 
 
 def main():
@@ -81,11 +87,11 @@ def main():
     MAIN PROGRAM LOOP
     launch server, controller and hardware
     """
-    print('INITIALIZING DRONE')
+    print('INITIALIZING DRONE...')
 
     start_server()
     start_controller()
-    print('\n...\nREADY TO FLY')
+    print('\n...\nREADY TO FLY!')
 
     # TODO: Maybe move to thread?
     # Infinite loop

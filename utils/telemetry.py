@@ -2,9 +2,8 @@ import re
 import os
 import time
 import psutil
-from utils import network
-import utils
 from enum import Enum
+from utils import network, helpers
 
 
 def get_cpu_temperature():
@@ -68,7 +67,7 @@ class Telemetry:
         # Get all readings then send them to client
         for record in TelemetryRecord:
             value = record.read_value()
-            self.send_callback(network.Event.TELEMETRY, utils.encode_telemetry_record(record.value, value))
+            self.send_callback(network.Event.TELEMETRY, helpers.encode_telemetry_record(record.value, value))
 
     def run(self):
         while True:

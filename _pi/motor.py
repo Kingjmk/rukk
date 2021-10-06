@@ -1,5 +1,5 @@
 import time
-import utils
+from utils import helpers
 
 
 class Motor:
@@ -26,7 +26,7 @@ class Motor:
         if calibrated:
             throttle += self.calibration
 
-        self.throttle = utils.clamp(throttle, self.MIN_THROTTLE, self.MAX_THROTTLE)
+        self.throttle = helpers.clamp(throttle, self.MIN_THROTTLE, self.MAX_THROTTLE)
         self.conn.set_servo_pulsewidth(self.pin, self.throttle)
 
         if snooze:

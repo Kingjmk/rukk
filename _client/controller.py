@@ -1,7 +1,6 @@
 import keyboard
 import time
-import utils
-from utils import network
+from utils import network, helpers
 import pygame
 
 # Throttle in percentage
@@ -63,9 +62,9 @@ class KeyboardController:
         throttle_controls = [_state['w'], _state['s']]
         if any(throttle_controls) and not all(throttle_controls):
             self.throttle += self.move_throttle * (- 1 if _state['s'] else 1)
-            self.throttle = utils.clamp(self.throttle, MIN_THROTTLE, MAX_THROTTLE)
+            self.throttle = helpers.clamp(self.throttle, MIN_THROTTLE, MAX_THROTTLE)
 
-        self.send_callback(network.Event.CONTROL, utils.encode_control(self.throttle, *self.rotation))
+        self.send_callback(network.Event.CONTROL, helpers.encode_control(self.throttle, *self.rotation))
 
     def run(self):
         """
@@ -141,9 +140,9 @@ class GamepadController:
 
         # This normalizes -1.0 to 1.0 range to be 0, 1.0 range * 100 is percentage
         throttle_axis = (self.joystick.get_axis(self.AXIS['THROTTLE']) * -1 + 1) / 2.0
-        self.throttle = utils.clamp(round(throttle_axis * 100, 2), MIN_THROTTLE, MAX_THROTTLE)
+        self.throttle = helpers.clamp(round(throttle_axis * 100, 2), MIN_THROTTLE, MAX_THROTTLE)
 
-        self.send_callback(network.Event.CONTROL, utils.encode_control(self.throttle, *self.rotation))
+        self.send_callback(network.Event.CONTROL, helpers.encode_control(self.throttle, *self.rotation))
         #print(f'{self.throttle}, {self.rotation[0]}, {self.rotation[1]}, {self.rotation[2]}')
 
     def run(self):

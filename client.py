@@ -9,7 +9,7 @@ import socket
 import threading
 import PySimpleGUI as sg
 from multiprocessing import freeze_support
-from utils import network
+from utils import network, telemetry, helpers
 from _client.controller import GamepadController
 
 EVENT_OUTPUT = '-OUTPUT-'
@@ -19,9 +19,13 @@ CLIENT_THREAD = None
 CONTROLLER_THREAD = None
 
 
-def listen_client_func(_event, data):
-    message = '%s -> %s' % (_event, data)
-    WINDOW.write_event_value(EVENT_OUTPUT, message)
+def listen_client_func(event, data):
+    if event == network.Event.TELEMETRY.value:
+        # Update Telemetry UI with new value
+        telemetry_name, telemetry_data = helpers.decode_telemetry_record(data)
+        WINDOW[telemetry_name].update(value=telemetry_data)
+    else:
+        WINDOW.write_event_value(EVENT_OUTPUT, '%s -> %s' % (event, data))
 
 
 def connect(host, port):
@@ -57,12 +61,26 @@ def connect(host, port):
 def main(host='raspberrypi', port=7777, *args):
     global WINDOW
 
-    layout = [
+    output_col = [
         [sg.Text('Output', font='Any 15')],
-        [sg.Multiline(
-            size=(65, 20), key='-ML-', autoscroll=True, reroute_stdout=True,
-            write_only=True, reroute_cprint=True, disabled=True,
-        ), sg.Button('Reconnect', key=EVENT_RECONNECT)],
+        [sg.Output(size=(65, 20), key=EVENT_OUTPUT)]
+    ]
+
+    telemetry_col = [
+        [sg.Text('Telemetry', font='Any 15')],
+    ]
+
+    for record in telemetry.TelemetryRecord:
+        telemetry_col += [
+            [sg.Text('%s:' % record.value, size=(8, None)), sg.Text('NONE', key=record.value)]
+        ]
+
+    layout = [
+        [
+            sg.Column(output_col, vertical_alignment='top', pad=(0, 0)),
+            sg.Column(telemetry_col, vertical_alignment='top', pad=(0, 0)),
+        ],
+        [sg.Button('Reconnect', key=EVENT_RECONNECT)],
     ]
 
     WINDOW = sg.Window('RemoteControl', layout, finalize=True)
@@ -76,8 +94,7 @@ def main(host='raspberrypi', port=7777, *args):
             break
 
         elif event == EVENT_OUTPUT:
-            output_message = values[EVENT_OUTPUT]
-            sg.cprint(output_message)
+            print(values[EVENT_OUTPUT])
         elif event == EVENT_RECONNECT:
             connect(host, port)
 
