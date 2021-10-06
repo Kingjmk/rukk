@@ -17,17 +17,28 @@ class QuadController:
     """
     Singleton for Flight controller
     """
-    cycle_speed = 0.01  # in Seconds
+
+    # Update cycles in Seconds
+    cycle_speed = 0.01
+    proportional_gain = 5.0
     int_throttle = 800
     max_throttle = 2000
-    min_throttle = 650
-    proportional_gain = 20.0
+    min_throttle = 600
+
+    # offset of Roll, Pitch from Yaw axis perspective
+    # aims to correct axis of an "X" shaped to align with an "+" shaped rotation axis for easier calculations
+    # offset angle is provided in Degrees
+    offset_angle = -45
+
+    # Time duration before resetting controls to idle
+    time_before_reset = datetime.timedelta(milliseconds=250)
 
     def __init__(self, sensor, *motors):
         """
         sensor: an Mpu6050 instance,
         motors: Motor instances (FL,FR,BR,BL)
         """
+
         self.sensor = sensor
         self.motors = motors
         self.motor_fl = motors[0]
@@ -55,7 +66,7 @@ class QuadController:
         self.pid_y = None
 
         self.update_timestamp = None
-        self.set_target()
+        self.set_rotation()
 
     def arm_motors(self):
         """
@@ -65,16 +76,9 @@ class QuadController:
             motor.arm(0)
         time.sleep(4)
 
-    @property
-    def time_before_reset(self):
+    def set_rotation(self, roll: float = 0, pitch: float = 0, yaw: float = 0):
         """
-        Time duration before resetting controls to idle
-        """
-        return datetime.timedelta(milliseconds=250)
-
-    def set_target(self, roll: float = 0, pitch: float = 0, yaw: float = 0):
-        """
-        Set Target
+        Set Target Rotation
         """
 
         self.update_timestamp = datetime.datetime.now()
@@ -102,7 +106,7 @@ class QuadController:
 
     def set_throttle(self, throttle: int):
         """
-        Set Throttle
+        Set target Throttle
         """
         self.update_timestamp = datetime.datetime.now()
         self.throttle = throttle
@@ -116,28 +120,25 @@ class QuadController:
         x, y, z = self.sensor.angles
         return [x, y, 0]
 
-    def accelerate(self):
+    def control(self):
         """
-        Accelerate towards target throttle
-        """
-        for motor in self.motors:
-            motor.pwm(ease_in(motor.throttle, self.throttle))
-
-    def balance(self):
-        """
-        Balance towards target rotation
+        Balance and Accelerate towards target rotation and throttle
         """
 
         """
-        to get target rotation based on actual X shape we need to rotate the angle vector by 45 degrees
+        to get target rotation based on actual X shape we need to rotate the angle vector by 45 degrees,
+        then convert result from rad to degrees
         """
         x_angle, y_angle, z_angle = self.angles
-        rotation_angle = math.radians(-45)
+        offset_angle = math.radians(self.offset_angle)
         rotation_vector = [
-            math.cos(rotation_angle) * math.radians(x_angle) - math.sin(rotation_angle) * math.radians(y_angle),
-            math.sin(rotation_angle) * math.radians(x_angle) + math.cos(rotation_angle) * math.radians(y_angle),
+            math.cos(offset_angle) * math.radians(x_angle) - math.sin(offset_angle) * math.radians(y_angle),
+            math.sin(offset_angle) * math.radians(x_angle) + math.cos(offset_angle) * math.radians(y_angle),
             z_angle,
         ]
+
+        rotation_vector[0] = math.degrees(rotation_vector[0])
+        rotation_vector[1] = math.degrees(rotation_vector[1])
 
         """
         In these two lines the error is calculated by the difference of the 
@@ -148,28 +149,29 @@ class QuadController:
         response_y = -1 * self.pid_y(rotation_vector[2] - self.TARGET_YAW_ANGLE)
 
         """
-        after the response is calculated we change the speeds of the motors
-        according to that response.
+        after the response is calculated we change the speeds of the motors on both axis
+        according to the pid response.
         """
+
+        # ROLL AXIS
+        self.motor_fr.pwm(self.throttle + response_r)
+        self.motor_bl.pwm(self.throttle - response_r)
+
+        # PITCH AXIS
+        self.motor_fl.pwm(self.throttle + response_p)
+        self.motor_br.pwm(self.throttle - response_p)
+
         if DEBUG:
             print(
-                f"{self.motor_fl.throttle + response_p} {self.motor_fr.throttle + response_r}\n"
-                f"{self.motor_bl.throttle - response_r} {self.motor_br.throttle - response_p}\n"
+                f"{self.motor_fl.throttle} {self.motor_fr.throttle}\n"
+                f"{self.motor_bl.throttle} {self.motor_br.throttle}\n"
                 f"real  :{rotation_vector[0]}, {rotation_vector[1]}, {rotation_vector[2]}\n"
                 f"target:{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
             )
 
-        # ROLL AXIS
-        self.motor_fr.pwm(self.motor_fr.throttle + response_r)
-        self.motor_bl.pwm(self.motor_bl.throttle - response_r)
-
-        # PITCH AXIS
-        self.motor_fl.pwm(self.motor_fl.throttle + response_p)
-        self.motor_br.pwm(self.motor_br.throttle - response_p)
-
     def idle(self):
         self.set_throttle(self.min_throttle)
-        self.set_target()
+        self.set_rotation()
 
     def halt(self):
         for motor in self.motors:
@@ -178,7 +180,7 @@ class QuadController:
     def run_event(self, event, data):
         if event == network.Event.STOP.value:
             self.set_throttle(self.min_throttle)
-            self.set_target()
+            self.set_rotation()
 
             for motor in self.motors:
                 motor.halt(snooze=0)
@@ -188,7 +190,7 @@ class QuadController:
             throttle_pct, roll, pitch, yaw = utils.decode_control(data)
             throttle = self.throttle_pct_pwm(throttle_pct)
             self.set_throttle(throttle)
-            self.set_target(roll, pitch, yaw)
+            self.set_rotation(roll, pitch, yaw)
             return
         elif event in [network.Event.CONNECTED.value]:
             print('\nCONNECTED TO CLIENT\n')
@@ -198,15 +200,11 @@ class QuadController:
         raise Exception(f'EVENT {event} UNKNOWN')
 
     def loop(self):
-        """
-        Should run inside loop
-        """
         # TODO: fix this so the thing wont fly into the void
         # if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
         #     self.idle()
 
-        self.accelerate()
-        self.balance()
+        self.control()
 
     def run(self):
         while True:
