@@ -7,10 +7,11 @@ SHOULD RUN ON PI STARTUP and beep or something
 import os
 import time
 import threading
-from utils import network, telemetry
+from utils import network, telemetry, camera
 from _pi import (
     motor, sensor, controller
 )
+import config
 
 os.system("sudo pigpiod")
 time.sleep(3)
@@ -36,18 +37,6 @@ Z is vertical or YAW
 
 """
 
-MOTOR_FRONT_LEFT = 4
-MOTOR_FRONT_RIGHT = 17
-MOTOR_BACK_RIGHT = 27
-MOTOR_BACK_LEFT = 22
-
-MOTOR_CALIBRATION = {
-    MOTOR_FRONT_LEFT: 0,
-    MOTOR_FRONT_RIGHT: 0,
-    MOTOR_BACK_RIGHT: 0,
-    MOTOR_BACK_LEFT: 0,
-}
-
 
 def listen_server_func(event, data):
     """
@@ -60,7 +49,7 @@ def listen_server_func(event, data):
 
 
 def start_server():
-    global TELEMETRY_THREAD, SERVER_THREAD
+    global TELEMETRY_THREAD, SERVER_THREAD, CAMERA_THREAD
 
     print('STARTING SERVER...')
     SERVER_THREAD = network.Server(listen_server_func)
@@ -70,6 +59,12 @@ def start_server():
     telemetry_handler = telemetry.Telemetry(SERVER_THREAD.send)
     TELEMETRY_THREAD = threading.Thread(target=telemetry_handler.run, daemon=True)
     TELEMETRY_THREAD.start()
+
+    if config.CAMERA_ENABLED:
+        print('STARTING CAMERA STREAM...')
+        camera_handler = camera.Server()
+        VIDEO_THREAD = threading.Thread(target=camera_handler.run, daemon=True)
+        VIDEO_THREAD.start()
 
 
 def start_controller():
@@ -100,10 +95,10 @@ def main():
 
 if __name__ == "__main__":
     # These are here since they actually do something on init
-    MOTOR_FL = motor.Motor(pi, MOTOR_FRONT_LEFT, MOTOR_CALIBRATION[MOTOR_FRONT_LEFT])
-    MOTOR_FR = motor.Motor(pi, MOTOR_FRONT_RIGHT, MOTOR_CALIBRATION[MOTOR_FRONT_RIGHT])
-    MOTOR_BR = motor.Motor(pi, MOTOR_BACK_RIGHT, MOTOR_CALIBRATION[MOTOR_BACK_RIGHT])
-    MOTOR_BL = motor.Motor(pi, MOTOR_BACK_LEFT, MOTOR_CALIBRATION[MOTOR_BACK_LEFT])
+    MOTOR_FL = motor.Motor(pi, config.MOTOR_FRONT_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_FRONT_LEFT])
+    MOTOR_FR = motor.Motor(pi, config.MOTOR_FRONT_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_FRONT_RIGHT])
+    MOTOR_BR = motor.Motor(pi, config.MOTOR_BACK_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_RIGHT])
+    MOTOR_BL = motor.Motor(pi, config.MOTOR_BACK_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_LEFT])
 
     SENSOR = sensor.Mpu(flip=True)
 
