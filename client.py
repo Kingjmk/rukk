@@ -4,7 +4,6 @@
 This is the client code, to be used to control PI Remotely using
 keyboard or gamepad
 """
-import sys
 import socket
 import threading
 import PySimpleGUI as sg
@@ -17,10 +16,15 @@ import config
 EVENT_OUTPUT = '-OUTPUT-'
 EVENT_RECONNECT = '-RECONNECT-'
 EVENT_CAMERA_FEED = '-CAMERA_FEED-'
+EVENT_IP_ADDRESS_FIELD = '-EVENT_IP_ADDRESS_FIELD-'
 
 CLIENT_THREAD = None
 CONTROLLER_THREAD = None
 CAMERA_THREAD = None
+
+
+CURRENT_HOST = config.DEFAULT_HOST
+CURRENT_PORT = config.DEFAULT_PORT
 
 
 def listen_client_func(event, data):
@@ -67,15 +71,15 @@ def connect(host, port):
     CONTROLLER_THREAD.start()
 
     if config.CAMERA_ENABLED:
-        camera_handler = camera.Client(listen_camera_func, host=host, port=port)
+        camera_handler = camera.Client(listen_camera_func, host=host)
         CAMERA_THREAD = threading.Thread(target=camera_handler.run, daemon=True)
         CAMERA_THREAD.start()
 
     return True
 
 
-def main(host='raspberrypi', port=7777, *args):
-    global WINDOW
+def main():
+    global WINDOW, CURRENT_HOST, CURRENT_PORT
 
     output_col = [
         [sg.Text('Output', font='Any 15')],
@@ -95,12 +99,15 @@ def main(host='raspberrypi', port=7777, *args):
             sg.Column(output_col, vertical_alignment='top', pad=(0, 0)),
             sg.Column(telemetry_col, vertical_alignment='top', pad=(0, 0)),
         ],
-        [sg.Button('Reconnect', key=EVENT_RECONNECT)],
+        [
+            sg.InputText(default_text=CURRENT_HOST, tooltip='IP Address', key=EVENT_IP_ADDRESS_FIELD),
+            sg.Button('Reconnect', key=EVENT_RECONNECT)
+        ],
     ]
 
     WINDOW = sg.Window('RemoteControl', layout, finalize=True)
 
-    connect(host, port)
+    connect(CURRENT_HOST, CURRENT_PORT)
 
     # Event Loop
     while True:
@@ -111,7 +118,8 @@ def main(host='raspberrypi', port=7777, *args):
         elif event == EVENT_OUTPUT:
             print(values[EVENT_OUTPUT])
         elif event == EVENT_RECONNECT:
-            connect(host, port)
+            CURRENT_HOST = values[EVENT_IP_ADDRESS_FIELD]
+            connect(CURRENT_HOST, CURRENT_PORT)
 
     WINDOW.close()
 
@@ -120,5 +128,5 @@ if __name__ == "__main__":
     freeze_support()
     print('Starting Program...')
     print('if you dont see a window, then something went wrong :(')
-    main(*sys.argv[1:])
+    main()
     exit(-1)
