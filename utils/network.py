@@ -120,7 +120,8 @@ class Server(BaseThread):
         """
         Send message to client
         """
-        self._send(self.sock, event, data=data)
+        if self.connected:
+            self._send(self.sock, event, data=data)
 
     def listen(self):
         try:

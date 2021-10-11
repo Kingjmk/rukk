@@ -143,7 +143,7 @@ class GamepadController:
         self.throttle = helpers.clamp(round(throttle_axis * 100, 2), MIN_THROTTLE, MAX_THROTTLE)
 
         self.send_callback(network.Event.CONTROL, helpers.encode_control(self.throttle, *self.rotation))
-        #print(f'{self.throttle}, {self.rotation[0]}, {self.rotation[1]}, {self.rotation[2]}')
+        print(f'{self.throttle}, {self.rotation[0]}, {self.rotation[1]}, {self.rotation[2]}')
 
     def run(self):
         """

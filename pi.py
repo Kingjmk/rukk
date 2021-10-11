@@ -7,11 +7,14 @@ SHOULD RUN ON PI STARTUP and beep or something
 import os
 import time
 import threading
-from utils import network, telemetry, camera
+from utils import network, telemetry
 from _pi import (
     motor, sensor, controller
 )
 import config
+
+if config.CAMERA_ENABLED:
+    from utils import camera
 
 os.system("sudo pigpiod")
 time.sleep(3)

@@ -45,8 +45,8 @@ class TelemetryRecord(Enum):
             self.RPI_TEMP: get_cpu_temperature,
             self.RPI_CPU: lambda: str(psutil.cpu_percent()),
             self.RPI_MEM: lambda: str(psutil.virtual_memory().percent),
-            self.SIG_STR: lambda: get_signal_strength,
-            self.BATTERY: lambda: get_battery_percent,
+            self.SIG_STR: lambda: get_signal_strength(),
+            self.BATTERY: lambda: get_battery_percent(),
         }
 
     def read_value(self):

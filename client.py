@@ -8,10 +8,12 @@ import socket
 import threading
 import PySimpleGUI as sg
 from multiprocessing import freeze_support
-from utils import network, telemetry, helpers, camera
+from utils import network, telemetry, helpers
 from _client.controller import GamepadController
 import config
 
+if config.CAMERA_ENABLED:
+    from utils import camera
 
 EVENT_OUTPUT = '-OUTPUT-'
 EVENT_RECONNECT = '-RECONNECT-'
@@ -83,7 +85,7 @@ def main():
 
     output_col = [
         [sg.Text('Output', font='Any 15')],
-        [sg.Output(size=(65, 20), key=EVENT_OUTPUT)]
+        [sg.Output(size=(65, 20), key=EVENT_OUTPUT, echo_stdout_stderr=True)]
     ]
 
     telemetry_col = [
