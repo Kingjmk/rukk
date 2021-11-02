@@ -52,14 +52,14 @@ def listen_server_func(event, data):
 
 
 def start_server():
-    global TELEMETRY_THREAD, SERVER_THREAD, CAMERA_THREAD
+    global TELEMETRY_THREAD, SERVER_THREAD, CAMERA_THREAD, CONTROLLER
 
     print('STARTING SERVER...')
     SERVER_THREAD = network.Server(listen_server_func)
     SERVER_THREAD.start()
 
     print('STARTING TELEMETRY...')
-    telemetry_handler = telemetry.Telemetry(SERVER_THREAD.send)
+    telemetry_handler = telemetry.Telemetry(SERVER_THREAD.send, controller=CONTROLLER)
     TELEMETRY_THREAD = threading.Thread(target=telemetry_handler.run, daemon=True)
     TELEMETRY_THREAD.start()
 
@@ -87,8 +87,8 @@ def main():
     """
     print('INITIALIZING DRONE...')
 
-    start_server()
     start_controller()
+    start_server()
     print('\n...\nREADY TO FLY!')
 
     # TODO: Maybe move to thread?

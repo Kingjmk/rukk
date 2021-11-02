@@ -1,4 +1,3 @@
-import math
 import time
 import datetime
 from simple_pid import PID
@@ -17,7 +16,7 @@ class QuadController:
 
     # Update cycles in Seconds
     cycle_speed = 0.01
-    proportional_gain = 5.0
+    proportional_gain = 5.0  # TODO: auto calibrate or something
     int_throttle = 800
     max_throttle = 2000
     min_throttle = 600
@@ -77,6 +76,7 @@ class QuadController:
         """
         Set Target Rotation
         """
+        roll, pitch, yaw = helpers.rotate_on_z([roll, pitch, yaw], self.offset_angle)
 
         self.update_timestamp = datetime.datetime.now()
 
@@ -123,27 +123,19 @@ class QuadController:
         """
 
         """
-        to get target rotation based on actual X shape we need to rotate the angle vector by 45 degrees,
+        to get target rotation based on actual X shape we need to rotate the angle vector by {self.offset_angle} degrees
         then convert result from rad to degrees
         """
-        x_angle, y_angle, z_angle = self.angles
-        offset_angle = math.radians(self.offset_angle)
-        rotation_vector = [
-            math.cos(offset_angle) * math.radians(x_angle) - math.sin(offset_angle) * math.radians(y_angle),
-            math.sin(offset_angle) * math.radians(x_angle) + math.cos(offset_angle) * math.radians(y_angle),
-            z_angle,
-        ]
 
-        rotation_vector[0] = math.degrees(rotation_vector[0])
-        rotation_vector[1] = math.degrees(rotation_vector[1])
+        rotation_vector = helpers.rotate_on_z(self.angles, self.offset_angle)
 
         """
-        In these two lines the error is calculated by the difference of the 
-        actual angle - the desired angle.
+        To get the amount of thrust to add to each axis we use the previously defined pids and the rotation vector 
+        after accounting for offset of the sensor  
         """
-        response_r = 1 * self.pid_r(rotation_vector[0] - self.TARGET_ROLL_ANGLE)
-        response_p = 1 * self.pid_p(rotation_vector[1] - self.TARGET_PITCH_ANGLE)
-        response_y = -1 * self.pid_y(rotation_vector[2] - self.TARGET_YAW_ANGLE)
+        response_r = 1 * self.pid_r(rotation_vector[0])
+        response_p = 1 * self.pid_p(rotation_vector[1])
+        response_y = -1 * self.pid_y(rotation_vector[2])
 
         """
         after the response is calculated we change the speeds of the motors on both axis

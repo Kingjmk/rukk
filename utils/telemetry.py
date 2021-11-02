@@ -6,7 +6,7 @@ from enum import Enum
 from utils import network, helpers
 
 
-def get_cpu_temperature():
+def get_cpu_temperature(**kwargs):
     """
     Get cpu temperature using vcgencmd
     """
@@ -14,7 +14,7 @@ def get_cpu_temperature():
     return temp.replace('temp=', '')
 
 
-def get_signal_strength():
+def get_signal_strength(**kwargs):
     """
     Get connection signal strength using iwconfig
     """
@@ -23,9 +23,15 @@ def get_signal_strength():
     return re.findall('(wlan[0-9]+).*?Signal level=(-[0-9]+) dBm', temp, re.DOTALL)
 
 
-def get_battery_percent():
+def get_battery_percent(**kwargs):
     # TODO: DO THIS SOMEHOW
     return str(0.0)
+
+
+def get_rotation(controller=None, **kwargs):
+    if not controller:
+        return '0,0,0'
+    return ','.join(controller.sensor.angles)
 
 
 class TelemetryRecord(Enum):
@@ -35,6 +41,7 @@ class TelemetryRecord(Enum):
     # Yes its Signal Strength im calling STR as a bad Dark souls reference
     SIG_STR = 'SIG_STR'
     BATTERY = 'BATTERY'
+    ROTATION = 'ROTATION'
 
     @property
     def mapping(self):
@@ -45,12 +52,13 @@ class TelemetryRecord(Enum):
             self.RPI_TEMP: get_cpu_temperature,
             self.RPI_CPU: lambda: str(psutil.cpu_percent()),
             self.RPI_MEM: lambda: str(psutil.virtual_memory().percent),
-            self.SIG_STR: lambda: get_signal_strength(),
-            self.BATTERY: lambda: get_battery_percent(),
+            self.SIG_STR: get_signal_strength,
+            self.BATTERY: get_battery_percent,
+            self.ROTATION: get_rotation,
         }
 
-    def read_value(self):
-        return self.mapping[self]()
+    def read_value(self, **kwargs):
+        return self.mapping[self](**kwargs)
 
 
 class Telemetry:
@@ -59,14 +67,15 @@ class Telemetry:
     then send them to client on a different or same socket every x seconds
     """
 
-    def __init__(self, send_callback):
+    def __init__(self, send_callback, **kwargs):
         self.send_callback = send_callback
         self.cycle_speed = 0.5
+        self.options = kwargs
 
     def loop(self):
         # Get all readings then send them to client
         for record in TelemetryRecord:
-            value = record.read_value()
+            value = record.read_value(**self.options)
             self.send_callback(network.Event.TELEMETRY, helpers.encode_telemetry_record(record.value, value))
 
     def run(self):
