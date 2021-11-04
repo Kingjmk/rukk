@@ -98,10 +98,10 @@ def main():
 
 if __name__ == "__main__":
     # These are here since they actually do something on init
-    MOTOR_FL = motor.Motor(pi, config.MOTOR_FRONT_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_FRONT_LEFT])
-    MOTOR_FR = motor.Motor(pi, config.MOTOR_FRONT_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_FRONT_RIGHT])
-    MOTOR_BR = motor.Motor(pi, config.MOTOR_BACK_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_RIGHT])
-    MOTOR_BL = motor.Motor(pi, config.MOTOR_BACK_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_LEFT])
+    MOTOR_FL = motor.Motor(pi, config.MOTOR_FRONT_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_FRONT_LEFT], code='FL')
+    MOTOR_FR = motor.Motor(pi, config.MOTOR_FRONT_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_FRONT_RIGHT], code='FR')
+    MOTOR_BR = motor.Motor(pi, config.MOTOR_BACK_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_RIGHT], code='BR')
+    MOTOR_BL = motor.Motor(pi, config.MOTOR_BACK_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_LEFT], code='BL')
 
     SENSOR = sensor.Mpu(flip=True)
 

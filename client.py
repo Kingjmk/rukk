@@ -90,7 +90,7 @@ def main():
 
     telemetry_col = [
         [sg.Text('Telemetry', font='Any 15')],
-    ] + [[sg.Text('%s:' % record.value, size=(8, None)), sg.Text('NONE', key=record.value)] for record in telemetry.TelemetryRecord]
+    ] + [[sg.Text('%s:' % record.value, size=(10, None)), sg.Text('NONE', key=record.value.strip(), size=(20, None))] for record in telemetry.TelemetryRecord]
 
     layout = [
         [

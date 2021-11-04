@@ -8,11 +8,12 @@ class Motor:
     # MIN ESC SPEED
     MIN_THROTTLE = 650
 
-    def __init__(self, conn, pin, calibration):
+    def __init__(self, conn, pin, calibration, code=None):
         self.conn = conn
         self.pin = pin
         self.throttle = 0
         self.calibration = calibration
+        self.code = code
 
     def halt(self, snooze=1) -> None:
         """

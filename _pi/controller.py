@@ -150,12 +150,12 @@ class QuadController:
         self.motor_fl.pwm(self.throttle + response_p)
         self.motor_br.pwm(self.throttle - response_p)
 
-        print(
-            f"{self.motor_fl.throttle} {self.motor_fr.throttle}\n"
-            f"{self.motor_bl.throttle} {self.motor_br.throttle}\n"
-            f"real  :{rotation_vector[0]}, {rotation_vector[1]}, {rotation_vector[2]}\n"
-            f"target:{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
-        )
+        # print(
+        #     f"{self.motor_fl.throttle} {self.motor_fr.throttle}\n"
+        #     f"{self.motor_bl.throttle} {self.motor_br.throttle}\n"
+        #     f"real  :{rotation_vector[0]}, {rotation_vector[1]}, {rotation_vector[2]}\n"
+        #     f"target:{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
+        # )
 
     def idle(self):
         self.set_throttle(self.min_throttle)

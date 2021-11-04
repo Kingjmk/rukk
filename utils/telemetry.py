@@ -14,6 +14,14 @@ def get_cpu_temperature(**kwargs):
     return temp.replace('temp=', '')
 
 
+def get_cpu_percent(**kwargs):
+    return str(psutil.cpu_percent())
+
+
+def get_mem_percent(**kwargs):
+    return str(psutil.virtual_memory().percent)
+
+
 def get_signal_strength(**kwargs):
     """
     Get connection signal strength using iwconfig
@@ -31,7 +39,13 @@ def get_battery_percent(**kwargs):
 def get_rotation(controller=None, **kwargs):
     if not controller:
         return '0,0,0'
-    return ','.join(controller.sensor.angles)
+    return ','.join(['%.2f' % x for x in controller.sensor.angles])
+
+
+def get_throttle(controller=None, **kwargs):
+    if not controller:
+        return 'None'
+    return ','.join([str(f'{x.code}={x.throttle}') for x in controller.motors])
 
 
 class TelemetryRecord(Enum):
@@ -42,6 +56,7 @@ class TelemetryRecord(Enum):
     SIG_STR = 'SIG_STR'
     BATTERY = 'BATTERY'
     ROTATION = 'ROTATION'
+    THROTTLE = 'THROTTLE'
 
     @property
     def mapping(self):
@@ -50,11 +65,12 @@ class TelemetryRecord(Enum):
         """
         return {
             self.RPI_TEMP: get_cpu_temperature,
-            self.RPI_CPU: lambda: str(psutil.cpu_percent()),
-            self.RPI_MEM: lambda: str(psutil.virtual_memory().percent),
+            self.RPI_CPU: get_cpu_percent,
+            self.RPI_MEM: get_mem_percent,
             self.SIG_STR: get_signal_strength,
             self.BATTERY: get_battery_percent,
             self.ROTATION: get_rotation,
+            self.THROTTLE: get_throttle,
         }
 
     def read_value(self, **kwargs):
