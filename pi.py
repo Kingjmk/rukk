@@ -103,7 +103,7 @@ if __name__ == "__main__":
     MOTOR_BR = motor.Motor(pi, config.MOTOR_BACK_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_RIGHT], code='BR')
     MOTOR_BL = motor.Motor(pi, config.MOTOR_BACK_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_LEFT], code='BL')
 
-    SENSOR = sensor.Mpu(flip=True)
+    SENSOR = sensor.Mpu(invert=True)
 
     # Function exists as to not pollute the global namespace
     try:
