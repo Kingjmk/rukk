@@ -13,15 +13,18 @@ class Mpu:
     ADDRESS = 0x68
     # [ROLL, PITCH, YAW]
     ZERO = [0.0, 0.0, 0.0]
-    DELTA_TIME = 0.05
+    DELTA_TIME = 0.1
 
-    def __init__(self, flip=False, invert=False):
+    def __init__(self, flip=False, invert_x=False, invert_y=False):
         """
         :param flip: Flip X, Y axis
-        :param invert: Invert Both X and Y
+        :param invert_x: Invert X
+        :param invert_y: Invert Y
         """
+
         self.flip = flip
-        self.invert = invert
+        self.invert_x = invert_x
+        self.invert_y = invert_y
         self._angles = self.__zero()
 
         self.__gyro = self.__zero()
@@ -44,8 +47,11 @@ class Mpu:
         if self.flip:
             angles = [angles[1], angles[0], angles[2]]
 
-        if self.invert:
-            self.__mul(angles, -1)
+        if self.invert_x:
+            angles[0] *= -1
+
+        if self.invert_y:
+            angles[1] *= -1
 
         return angles
 

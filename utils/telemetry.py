@@ -26,9 +26,10 @@ def get_signal_strength(**kwargs):
     """
     Get connection signal strength using iwconfig
     """
-    temp = os.popen("iwconfig").read()
-
-    return re.findall('(wlan[0-9]+).*?Signal level=(-[0-9]+) dBm', temp, re.DOTALL)
+    # TODO: do this better
+    # temp = os.popen("iwconfig").read()
+    # return re.findall('(wlan[0-9]+).*?Signal level=(-[0-9]+) dBm', temp, re.DOTALL)
+    return '0 dbm'
 
 
 def get_battery_percent(**kwargs):

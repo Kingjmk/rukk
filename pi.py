@@ -33,8 +33,8 @@ MOTOR GPIO MAPPING - CLOCK WISE
         /         \
       22    back   27
 
-17-22 is X or ROLL or sideways after -45deg
-4-27 is Y or PITCH or tilt forward or backwards after -45deg
+17-22 is X or PITCH or sideways after -45deg
+4-27 is Y or ROLL or tilt forward or backwards after -45deg
 
 Z is vertical or YAW
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     MOTOR_BR = motor.Motor(pi, config.MOTOR_BACK_RIGHT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_RIGHT], code='BR')
     MOTOR_BL = motor.Motor(pi, config.MOTOR_BACK_LEFT, config.MOTOR_CALIBRATION[config.MOTOR_BACK_LEFT], code='BL')
 
-    SENSOR = sensor.Mpu(invert=True)
+    SENSOR = sensor.Mpu(flip=True, invert_y=True)
 
     # Function exists as to not pollute the global namespace
     try:
