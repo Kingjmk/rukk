@@ -13,7 +13,7 @@ class Mpu:
     ADDRESS = 0x68
     # [ROLL, PITCH, YAW]
     ZERO = [0.0, 0.0, 0.0]
-    DELTA_TIME = 0.004
+    DELTA_TIME = 0.05
 
     def __init__(self, flip=False, invert=False):
         """
