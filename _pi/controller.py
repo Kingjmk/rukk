@@ -18,7 +18,7 @@ class QuadController:
     cycle_speed = 0.01
     proportional_gain = 5.0  # TODO: auto calibrate or something
     int_throttle = 800
-    max_throttle = 2000
+    max_throttle = 1800
     min_throttle = 600
 
     # offset of Roll, Pitch from Yaw axis perspective
@@ -70,7 +70,7 @@ class QuadController:
         """
         for motor in self.motors:
             motor.arm(0)
-        time.sleep(4)
+        time.sleep(1)
 
     def set_rotation(self, roll: float = 0, pitch: float = 0, yaw: float = 0):
         """
@@ -114,8 +114,8 @@ class QuadController:
         Return current rotation from sensor
         """
         # TODO: Implement MPU with functional z axis
-        x, y, z = self.sensor.angles
-        return [x, y, 0]
+        r, p, y = self.sensor.angles
+        return [r, p, 0]
 
     def control(self):
         """

@@ -4,21 +4,17 @@ CODE ON RPI
 
 SHOULD RUN ON PI STARTUP and beep or something
 """
-import os
-import time
 import threading
 from utils import network, telemetry
 from _pi import (
     motor, sensor, controller
 )
 import config
+import pigpio
 
 if config.CAMERA_ENABLED:
     from utils import camera
 
-os.system("sudo pigpiod")
-time.sleep(3)
-import pigpio
 
 pi = pigpio.pi()
 
@@ -34,9 +30,9 @@ MOTOR GPIO MAPPING - CLOCK WISE
       22    back   27
 
 17-22 is X or PITCH or sideways after -45deg
-4-27 is Y or ROLL or tilt forward or backwards after -45deg
+4-27 is Z or ROLL or tilt forward or backwards after -45deg
 
-Z is vertical or YAW
+Y is vertical or YAW
 
 """
 
