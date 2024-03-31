@@ -1,4 +1,4 @@
-from simple_pid import PID
+from utils.pid import PID
 from utils.helpers import rotate_on_z
 
 VECTOR_ZERO = [0, 0, 0]

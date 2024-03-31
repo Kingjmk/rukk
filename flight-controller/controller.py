@@ -1,6 +1,6 @@
-import time
-import datetime
-from simple_pid import PID
+import utime
+import config
+from utils.pid import PID
 from utils import network, helpers
 
 
@@ -14,8 +14,8 @@ class QuadController:
     Singleton for Flight controller
     """
 
-    # Update cycles in Seconds
-    cycle_speed = 0.01
+    # Update cycles in MS
+    cycle_speed = 50
     proportional_gain = 5.0  # TODO: auto calibrate or something
     int_throttle = 800
     max_throttle = 1800
@@ -27,11 +27,11 @@ class QuadController:
     offset_angle = -45
 
     # Time duration before resetting controls to idle
-    time_before_reset = datetime.timedelta(milliseconds=250)
+    time_before_reset = 250  # ms
 
     def __init__(self, sensor, *motors):
         """
-        sensor: an Mpu6050 instance,
+        sensor: an Mpu instance,
         motors: Motor instances (FL,FR,BR,BL)
         """
 
@@ -70,7 +70,7 @@ class QuadController:
         """
         for motor in self.motors:
             motor.arm(0)
-        time.sleep(1)
+        utime.sleep(1)
 
     def set_rotation(self, roll: float = 0, pitch: float = 0, yaw: float = 0):
         """
@@ -78,7 +78,7 @@ class QuadController:
         """
         roll, pitch, yaw = helpers.rotate_on_z([roll, pitch, yaw], self.offset_angle)
 
-        self.update_timestamp = datetime.datetime.now()
+        self.update_timestamp = int(utime.ticks_ms())
 
         # ROLL
         self.TARGET_ROLL_ANGLE = roll
@@ -105,7 +105,7 @@ class QuadController:
         """
         Set target Throttle
         """
-        self.update_timestamp = datetime.datetime.now()
+        self.update_timestamp = int(utime.ticks_ms())
         self.throttle = throttle
 
     @property
@@ -114,6 +114,9 @@ class QuadController:
         Return current rotation from sensor
         """
         # TODO: Implement MPU with functional z axis
+        if not config.Mpu.enable:
+            return [0, 0, 0]
+
         r, p, y = self.sensor.angles
         return [r, p, 0]
 
@@ -150,15 +153,10 @@ class QuadController:
         self.motor_fl.pwm(self.throttle + response_p)
         self.motor_br.pwm(self.throttle - response_p)
 
-        # print(
-        #     f"{self.motor_fl.throttle} {self.motor_fr.throttle}\n"
-        #     f"{self.motor_bl.throttle} {self.motor_br.throttle}\n"
-        #     f"real  :{rotation_vector[0]}, {rotation_vector[1]}, {rotation_vector[2]}\n"
-        #     f"target:{self.TARGET_ROLL_ANGLE}, {self.TARGET_PITCH_ANGLE}, {self.TARGET_YAW_ANGLE}\n"
-        # )
+        print("XYZ ROTATION: ", str(self.sensor.angles))
 
     def idle(self):
-        self.set_throttle(self.min_throttle)
+        self.set_throttle(self.throttle_pct_pwm(50))
         self.set_rotation()
 
     def halt(self):
@@ -166,7 +164,7 @@ class QuadController:
             motor.halt()
 
     def run_event(self, event, data):
-        if event == network.Event.STOP.value:
+        if event == network.NetworkEvent.STOP:
             self.set_throttle(self.min_throttle)
             self.set_rotation()
 
@@ -174,13 +172,12 @@ class QuadController:
                 motor.halt(snooze=0)
             return
 
-        elif event == network.Event.CONTROL.value:
+        elif event == network.NetworkEvent.CONTROL:
             throttle_pct, roll, pitch, yaw = helpers.decode_control(data)
-            throttle = self.throttle_pct_pwm(throttle_pct)
-            self.set_throttle(throttle)
+            self.set_throttle(self.throttle_pct_pwm(throttle_pct))
             self.set_rotation(roll, pitch, yaw)
             return
-        elif event in [network.Event.CONNECTED.value]:
+        elif event in [network.NetworkEvent.CONNECTED]:
             print('\nCONNECTED TO CLIENT\n')
             # NOOP
             return
@@ -188,13 +185,15 @@ class QuadController:
         raise Exception(f'EVENT {event} UNKNOWN')
 
     def loop(self):
-        # TODO: fix this so the thing wont fly into the void
-        # if self.update_timestamp and self.update_timestamp + self.time_before_reset > datetime.datetime.now():
-        #     self.idle()
+        if config.Mpu.enable:
+            self.sensor.loop()
+        if self.update_timestamp and self.update_timestamp + self.time_before_reset > int(utime.ticks_ms()):
+            self.idle()
 
         self.control()
 
     def run(self):
         while True:
             self.loop()
-            time.sleep(self.cycle_speed)
+            print("controller loop")
+            utime.sleep_ms(self.cycle_speed)

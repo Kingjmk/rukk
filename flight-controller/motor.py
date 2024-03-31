@@ -1,5 +1,6 @@
 import time
 from utils import helpers
+from machine import Pin, PWM
 
 
 class Motor:
@@ -7,13 +8,13 @@ class Motor:
     MAX_THROTTLE = 2400
     # MIN ESC SPEED
     MIN_THROTTLE = 650
+    _pwm: PWM
 
-    def __init__(self, conn, pin, calibration, code=None):
-        self.conn = conn
-        self.pin = pin
+    def __init__(self, config, code=None):
+        self.motor_config = config
         self.throttle = 0
-        self.calibration = calibration
         self.code = code
+        self._pwm = None
 
     def halt(self, snooze=1) -> None:
         """
@@ -25,10 +26,14 @@ class Motor:
 
     def pwm(self, throttle: int, calibrated: bool = True, snooze=0):
         if calibrated:
-            throttle += self.calibration
+            throttle += self.motor_config.calibration
 
         self.throttle = helpers.clamp(throttle, self.MIN_THROTTLE, self.MAX_THROTTLE)
-        self.conn.set_servo_pulsewidth(self.pin, self.throttle)
+
+        if self.motor_config.enable:
+            if not self._pwm:
+                self._pwm = PWM(Pin(self.motor_config.pin), freq=50)
+            self._pwm.duty_u16(self.throttle)
 
         if snooze:
             time.sleep(snooze)

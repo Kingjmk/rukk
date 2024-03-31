@@ -1,6 +1,7 @@
 inputs==0.5
 keyboard==0.13.5
-PySimpleGUI==4.55.1
-pygame==2.1.2
-psutil==5.9.0
-opencv-python==4.5.3.56
+PySimpleGUI==4.60.5
+pygame==2.5.2
+psutil==5.9.7
+opencv-python==4.8.1.78
+utime

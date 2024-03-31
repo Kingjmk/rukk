@@ -1,8 +1,4 @@
-import re
-import os
 import time
-import psutil
-from enum import Enum
 from utils import network, helpers
 
 
@@ -10,16 +6,19 @@ def get_cpu_temperature(**kwargs):
     """
     Get cpu temperature using vcgencmd
     """
-    temp = os.popen("vcgencmd measure_temp").readline()
-    return temp.replace('temp=', '')
+    # temp = os.popen("vcgencmd measure_temp").readline()
+    # return temp.replace('temp=', '')
+    return '0C'
 
 
 def get_cpu_percent(**kwargs):
-    return str(psutil.cpu_percent())
+    # return str(psutil.cpu_percent())
+    return '0%'
 
 
 def get_mem_percent(**kwargs):
-    return str(psutil.virtual_memory().percent)
+    # return str(psutil.virtual_memory().percent)
+    return '0%'
 
 
 def get_signal_strength(**kwargs):
@@ -49,33 +48,38 @@ def get_throttle(controller=None, **kwargs):
     return ','.join([str(f'{x.code}={x.throttle}') for x in controller.motors])
 
 
-class TelemetryRecord(Enum):
+class TelemetryRecord:
     RPI_TEMP = 'RPI_TEMP'
     RPI_CPU = 'RPI_CPU'
     RPI_MEM = 'RPI_MEM'
-    # Yes its Signal Strength im calling STR as a bad Dark souls reference
     SIG_STR = 'SIG_STR'
     BATTERY = 'BATTERY'
     ROTATION = 'ROTATION'
     THROTTLE = 'THROTTLE'
 
-    @property
-    def mapping(self):
-        """
-        Return mapping of telemetry records to callable functions
-        """
-        return {
-            self.RPI_TEMP: get_cpu_temperature,
-            self.RPI_CPU: get_cpu_percent,
-            self.RPI_MEM: get_mem_percent,
-            self.SIG_STR: get_signal_strength,
-            self.BATTERY: get_battery_percent,
-            self.ROTATION: get_rotation,
-            self.THROTTLE: get_throttle,
-        }
+    @classmethod
+    def all(cls):
+        return [
+            cls.RPI_TEMP,
+            cls.RPI_CPU,
+            cls.RPI_MEM,
+            cls.SIG_STR,
+            cls.BATTERY,
+            cls.ROTATION,
+            cls.THROTTLE,
+        ]
 
-    def read_value(self, **kwargs):
-        return self.mapping[self](**kwargs)
+    @classmethod
+    def read_value(cls, value: str, **kwargs):
+        return {
+            cls.RPI_TEMP: get_cpu_temperature,
+            cls.RPI_CPU: get_cpu_percent,
+            cls.RPI_MEM: get_mem_percent,
+            cls.SIG_STR: get_signal_strength,
+            cls.BATTERY: get_battery_percent,
+            cls.ROTATION: get_rotation,
+            cls.THROTTLE: get_throttle,
+        }[value](**kwargs)
 
 
 class Telemetry:
@@ -86,14 +90,14 @@ class Telemetry:
 
     def __init__(self, send_callback, **kwargs):
         self.send_callback = send_callback
-        self.cycle_speed = 0.5
+        self.cycle_speed = 100
         self.options = kwargs
 
     def loop(self):
         # Get all readings then send them to client
-        for record in TelemetryRecord:
-            value = record.read_value(**self.options)
-            self.send_callback(network.Event.TELEMETRY, helpers.encode_telemetry_record(record.value, value))
+        for record in TelemetryRecord.all():
+            value = TelemetryRecord.read_value(record, **self.options)
+            self.send_callback(network.NetworkEvent.TELEMETRY, helpers.encode_telemetry_record(record, value))
 
     def run(self):
         while True:

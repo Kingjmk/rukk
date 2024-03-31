@@ -76,8 +76,8 @@ class Client:
     """
     Camera RX to receive video feed
     """
-
-    def __init__(self, receive_callback, host=HOST, port: int = PORT):
+    def __init__(self, receive_callback, address: str = '127.0.0.1:8000'):
+        host, port = address.split(':')
         self.receive_callback = receive_callback
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.connect((host, port))

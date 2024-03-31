@@ -1,34 +1,39 @@
 import random
-import socket
-import threading
-from enum import Enum
 
-# Allow any (manage os side)
-HOST = '0.0.0.0'
+
+HOST = "0.0.0.0"
 PORT = 7777
+# Allow any (manage os side)
 SEP_CHAR = '##'
 EMPTY_CHAR = '__'
 END_CHAR = '$$'
 
 
-class Event(Enum):
+class NetworkEvent:
     CONNECTED = 'CONNECTED'
     CONTROL = 'CONTROL'
     STOP = 'STOP'
     TELEMETRY = 'TELEMETRY'
 
+    @property
+    def all(self):
+        return [
+            self.CONNECTED,
+            self.CONTROL,
+            self.STOP,
+            self.TELEMETRY,
+        ]
 
-class BaseThread(threading.Thread):
+
+class BaseConnection:
     buf_size = 1024
     encoding = 'ascii'
-    daemon = True
 
-    def __init__(self, target_func, host=HOST, port: int = PORT):
-        super().__init__()
+    def __init__(self, target_func, host: str = HOST, port: int = PORT, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.target_func = target_func
-        self.threadId = random.randint(1, 1000)
-        self.port = port
         self.host = host
+        self.port = port
 
     def handle_message(self, messages):
         """
@@ -36,6 +41,7 @@ class BaseThread(threading.Thread):
         """
 
         # This For loop will handle if the socket sent multiple messages at once
+        print('MESSAGES', messages)
         for message in messages.split(END_CHAR):
             message = message.strip('')
 
@@ -50,108 +56,9 @@ class BaseThread(threading.Thread):
             self.target_func(event, data)
 
     @classmethod
-    def _send(cls, sock, event, data=EMPTY_CHAR):
+    def _send(cls, _conn, event, data=EMPTY_CHAR):
         """
         Send message to socket
         """
-        if isinstance(event, Event):
-            event = event.value
-
         message = '%s%s%s%s' % (event, SEP_CHAR, data, END_CHAR)
-        sock.send(message.encode(cls.encoding))
-
-
-class Client(BaseThread):
-    """
-    Communication Client for RPI
-    """
-
-    def __init__(self, target_func, host=HOST, port: int = PORT):
-        super().__init__(target_func, host)
-        self.sock = socket.socket()
-        self.sock.connect((host, port))
-
-    def send(self, event, data=EMPTY_CHAR):
-        """
-        Send message to server
-        """
-        self._send(self.sock, event, data=data)
-
-    def listen(self):
-        try:
-            data = self.sock.recv(self.buf_size)
-        except ConnectionResetError:
-            return -1
-
-        message = data.decode(self.encoding)
-
-        if not data:
-            return -1
-        self.handle_message(message)
-        return 1
-
-    def run(self):
-        print(f'CONNECTED TO {self.host}:{self.port}')
-        while True:
-            resp = self.listen()
-            if resp == -1:
-                break
-
-        self.sock.close()
-
-
-class Server(BaseThread):
-    """
-    Communication Server for RPI
-    """
-
-    @property
-    def connected(self):
-        return self.sock is not None
-
-    def __init__(self, target_func, host=HOST, port: int = PORT):
-        super().__init__(target_func, host)
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.server.bind((host, port))
-        self.server.listen(1)
-        self.sock = None
-
-    def send(self, event, data=EMPTY_CHAR):
-        """
-        Send message to client
-        """
-        if self.connected:
-            self._send(self.sock, event, data=data)
-
-    def listen(self):
-        try:
-            data = self.sock.recv(self.buf_size)
-        except ConnectionResetError:
-            return -1
-
-        message = data.decode(self.encoding)
-
-        if not data:
-            return -1
-        self.handle_message(message)
-        return 1
-
-    def run(self):
-        print('WAITING FOR CONNECTION')
-        self.sock, client_addr = self.server.accept()
-
-        print(f'CONNECTED TO {client_addr}')
-        # Send finish initializing event to whoever is on the other side
-        self.send(Event.CONNECTED)
-        while True:
-            resp = self.listen()
-            if resp == -1:
-                break
-
-        self.sock.close()
-        self.sock = None
-        # WAIT FOR CONN AGAIN
-        # YES THIS IS RECURSION THAT's THE POINT IT SHOULD RUN UNTIL THE END OF THE UNIVERSE (or battery)
-        print('CONNECTION RESET, WAITING FOR NEW CONNECTION')
-        # TODO: should be idling on new connection NOT first connection
-        self.run()
+        _conn.send(message.encode(cls.encoding))

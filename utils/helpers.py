@@ -1,4 +1,3 @@
-import copy
 import math
 
 
@@ -14,7 +13,7 @@ def rotate_on_z(vector, angle) -> list:
     cs = math.cos(theta)
     sn = math.sin(theta)
 
-    result = copy.copy(vector)
+    result = [x for x in vector]
 
     result[0] = round(vector[0] * cs - vector[1] * sn, 2)
     result[1] = round(vector[0] * sn + vector[1] * cs, 2)

@@ -1,16 +1,17 @@
-#!/usr/bin/python3
-
 """
 This is the client code, to be used to control PI Remotely using
 keyboard or gamepad
 """
-import socket
+import logging
 import threading
 import PySimpleGUI as sg
 from multiprocessing import freeze_support
-from utils import network, telemetry, helpers
-from _client.controller import GamepadController
+from utils import telemetry, helpers
+from client.controller import GamepadController, KeyboardController
+from client.radio import NetworkEvent, ClientConnection
 import config
+
+logger = logging.Logger(__name__)
 
 if config.CAMERA_ENABLED:
     from utils import camera
@@ -30,7 +31,7 @@ CURRENT_PORT = config.DEFAULT_PORT
 
 
 def listen_client_func(event, data):
-    if event == network.Event.TELEMETRY.value:
+    if event == NetworkEvent.TELEMETRY:
         # Update Telemetry UI with new value
         telemetry_name, telemetry_data = helpers.decode_telemetry_record(data)
         WINDOW[telemetry_name].update(value=telemetry_data)
@@ -47,7 +48,11 @@ def connect(host, port):
 
     # RESET THREADS
     if CLIENT_THREAD:
-        CLIENT_THREAD._stop()
+        try:
+            CLIENT_THREAD._stop()
+        except Exception as e:
+            logger.error(e)
+            pass
 
     if CONTROLLER_THREAD:
         CONTROLLER_THREAD._stop()
@@ -61,14 +66,16 @@ def connect(host, port):
 
     WINDOW.write_event_value(EVENT_OUTPUT, 'CONNECTING TO %s:%s' % (host, port))
     try:
-        CLIENT_THREAD = network.Client(listen_client_func, host=host, port=int(port))
+        network_client = ClientConnection(listen_client_func, host=host, port=int(port))
+        CLIENT_THREAD = threading.Thread(target=network_client.run, daemon=True)
         CLIENT_THREAD.start()
-        CLIENT_THREAD.send(network.Event.CONNECTED)
-    except (socket.error, socket.gaierror, socket.herror):
-        WINDOW.write_event_value(EVENT_OUTPUT, 'CONNECTION FAILED TO %s:%s' % (host, port))
+        network_client.send(NetworkEvent.CONNECTED)
+    except Exception as e:
+        logger.error(e)
+        WINDOW.write_event_value(EVENT_OUTPUT, 'CONNECTION FAILED')
         return False
 
-    controller = GamepadController(CLIENT_THREAD.send)
+    controller = KeyboardController(network_client.send)
     CONTROLLER_THREAD = threading.Thread(target=controller.run, daemon=True)
     CONTROLLER_THREAD.start()
 
@@ -90,7 +97,7 @@ def main():
 
     telemetry_col = [
         [sg.Text('Telemetry', font='Any 15')],
-    ] + [[sg.Text('%s:' % record.value, size=(10, None)), sg.Text('NONE', key=record.value.strip(), size=(20, None))] for record in telemetry.TelemetryRecord]
+    ] + [[sg.Text('%s:' % record, size=(10, None)), sg.Text('NONE', key=record.strip(), size=(20, None))] for record in telemetry.TelemetryRecord.all()]
 
     layout = [
         [
@@ -108,8 +115,6 @@ def main():
     ]
 
     WINDOW = sg.Window('RemoteControl', layout, finalize=True)
-
-    connect(CURRENT_HOST, CURRENT_PORT)
 
     # Event Loop
     while True:
